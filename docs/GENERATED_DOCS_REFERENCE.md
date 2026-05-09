@@ -6,7 +6,7 @@ Below is the fully populated structure showing every possible file across all ph
 
 ```text
 aidlc-docs/
-├── aidlc-state.md                                          # Workflow state tracker — project info, stage progress, current status
+├── aidlc-state.md                                          # Workflow state tracker — project info, stage progress, current status, integrations status
 ├── audit.md                                                # Complete audit trail — every user input, AI response, and approval with timestamps
 │
 ├── inception/                                              # 🔵 INCEPTION PHASE — determines WHAT to build and WHY
@@ -99,4 +99,4 @@ aidlc-docs/
 - Plans in `inception/plans/` and `construction/plans/` contain `[Answer]:` tags where users provide input, and `[ ]`/`[x]` checkboxes that track execution progress.
 - Application code is never placed inside `aidlc-docs/` — it goes to the workspace root. Only markdown documentation lives here.
 - The `audit.md` file is append-only and captures every interaction with ISO 8601 timestamps.
-- The `aidlc-state.md` file tracks which stages have been completed, skipped, or are in progress, along with extension configuration.
+- The `aidlc-state.md` file tracks which stages have been completed, skipped, or are in progress, along with extension configuration. It also records integration status (`Active`, `Available`, `Unavailable`) under `## Integrations` after the Integration Selection stage runs.

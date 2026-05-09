@@ -19,7 +19,8 @@ aidlc-rules/
     ├── common/                   # Shared guidance across all phases
     ├── inception/                # Planning and architecture rules
     ├── construction/             # Design and implementation rules
-    ├── extensions/               # Optional cross-cutting constraint rules
+    ├── extensions/               # Optional cross-cutting constraint rules (blocking; RA opt-in)
+    ├── integrations/             # Optional tool bindings (non-blocking; Integration Selection stage opt-in)
     └── operations/               # Deployment and monitoring rules
 scripts/aidlc-evaluator/          # Python evaluation framework (uv-managed)
 docs/

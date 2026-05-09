@@ -42,9 +42,9 @@ Check if `aidlc-docs/aidlc-state.md` exists:
     - **IF user explicitly requests rerun**: Next phase is Reverse Engineering regardless of staleness
 - **IF no reverse engineering artifacts**: Next phase is Reverse Engineering
 
-## Step 4: Create Initial State File
+## Step 4: Create or Update Initial State File
 
-Create `aidlc-docs/aidlc-state.md`:
+If `aidlc-docs/aidlc-state.md` does not exist, create it. If it already exists (for example, a prior stage populated sections such as `## Integrations`), update it by adding or refreshing the sections below — do NOT overwrite existing sections.
 
 ```markdown
 # AI-DLC State Tracking

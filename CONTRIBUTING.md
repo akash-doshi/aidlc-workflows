@@ -29,6 +29,7 @@ aidlc-rules/
     ├── inception/
     ├── construction/
     ├── extensions/
+    ├── integrations/
     └── operations/
 ```
 
@@ -40,7 +41,19 @@ Rules are organized by phase:
 - `inception/` - Planning and architecture rules
 - `construction/` - Design and implementation rules
 - `operations/` - Deployment and monitoring rules
-- `extensions/` - Optional cross-cutting constraint rules
+- `extensions/` - Optional cross-cutting constraint rules (blocking; opt in at Requirements Analysis)
+- `integrations/` - Optional tool bindings such as MCP servers (non-blocking; opt in at the Integration Selection stage)
+
+### Authoring Integrations
+
+Integrations are a distinct category from extensions. They bind AI-DLC to external tools rather than encoding methodology constraints.
+
+- Location: `aidlc-rules/aws-aidlc-rule-details/integrations/<name>/`
+- Two files per integration: `<name>.md` (rules with required sections: Overview, Preconditions, Capabilities, Authoritative For, Tools, Usage Guidance, Failure Handling) and `<name>.opt-in.md` (capability probe)
+- Integrations MUST be non-blocking. If the tool is unavailable or a call fails, stages MUST fall back to the default path
+- Integration files MUST NOT contain stage-specific hooks. Declare capabilities in neutral language; the stage-agnostic decision rule in `common/integrations.md` matches stage information needs to capabilities at runtime
+- Probes run only during the Integration Selection stage (the first user-facing stage). Stages other than Integration Selection MUST NOT probe, activate, or re-prompt the user about integrations
+- See `integrations/codekb/` for a reference implementation
 
 ### Testing Changes
 

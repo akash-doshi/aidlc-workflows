@@ -8,16 +8,16 @@
 - **README.md**: Human-readable documentation for repository
 
 ## The Three-Phase Lifecycle:
-• **INCEPTION PHASE**: Planning and architecture (Workspace Detection + conditional phases + Workflow Planning)
+• **INCEPTION PHASE**: Planning and architecture (Integration Selection + Workspace Detection + conditional phases + Workflow Planning)
 • **CONSTRUCTION PHASE**: Design, implementation, build and test (per-unit design + Code Generation + Build & Test)
 • **OPERATIONS PHASE**: Placeholder for future deployment and monitoring workflows
 
 ## The Adaptive Workflow:
-• **Workspace Detection** (always) → **Reverse Engineering** (brownfield only) → **Requirements Analysis** (always, adaptive depth) → **Conditional Phases** (as needed) → **Workflow Planning** (always) → **Code Generation** (always, per-unit) → **Build and Test** (always)
+• **Integration Selection** (always) → **Workspace Detection** (always) → **Reverse Engineering** (brownfield only) → **Requirements Analysis** (always, adaptive depth) → **Conditional Phases** (as needed) → **Workflow Planning** (always) → **Code Generation** (always, per-unit) → **Build and Test** (always)
 
 ## How It Works:
 • **AI analyzes** your request, workspace, and complexity to determine which stages are needed
-• **These stages always execute**: Workspace Detection, Requirements Analysis (adaptive depth), Workflow Planning, Code Generation (per-unit), Build and Test
+• **These stages always execute**: Integration Selection, Workspace Detection, Requirements Analysis (adaptive depth), Workflow Planning, Code Generation (per-unit), Build and Test
 • **All other stages are conditional**: Reverse Engineering, User Stories, Application Design, Units Generation, per-unit design stages (Functional Design, NFR Requirements, NFR Design, Infrastructure Design)
 • **No fixed sequences**: Stages execute in the order that makes sense for your specific task
 
@@ -35,6 +35,7 @@ flowchart TD
     Start(["User Request"])
     
     subgraph INCEPTION["🔵 INCEPTION PHASE"]
+        IS["Integration Selection<br/><b>ALWAYS</b>"]
         WD["Workspace Detection<br/><b>ALWAYS</b>"]
         RE["Reverse Engineering<br/><b>CONDITIONAL</b>"]
         RA["Requirements Analysis<br/><b>ALWAYS</b>"]
@@ -57,7 +58,8 @@ flowchart TD
         OPS["Operations<br/><b>PLACEHOLDER</b>"]
     end
     
-    Start --> WD
+    Start --> IS
+    IS --> WD
     WD -.-> RE
     WD --> RA
     RE --> RA
@@ -85,6 +87,7 @@ flowchart TD
     BT --> End(["Complete"])
     
     style WD fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
+    style IS fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
     style RA fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
     style WP fill:#4CAF50,stroke:#1B5E20,stroke-width:3px,color:#fff
 
@@ -112,6 +115,7 @@ flowchart TD
 **Stage Descriptions:**
 
 **🔵 INCEPTION PHASE** - Planning and Architecture
+- Integration Selection: Discover, probe, and activate external tool integrations (ALWAYS)
 - Workspace Detection: Analyze workspace state and project type (ALWAYS)
 - Reverse Engineering: Analyze existing codebase (CONDITIONAL - Brownfield only)
 - Requirements Analysis: Gather and validate requirements (ALWAYS - Adaptive depth)

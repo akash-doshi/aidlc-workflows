@@ -24,6 +24,7 @@ All subsequent rule detail file references (e.g., `common/process-overview.md`, 
 - Load `common/session-continuity.md` for session resumption guidance
 - Load `common/content-validation.md` for content validation requirements
 - Load `common/question-format-guide.md` for question formatting rules
+- Load `common/integrations.md` for the stage-agnostic integration decision rule used by every stage
 - Reference these throughout the workflow execution
 
 ## MANDATORY: Extensions Loading (Context-Optimized)
@@ -48,6 +49,19 @@ All subsequent rule detail file references (e.g., `common/process-overview.md`, 
 - When presenting stage completion, include a summary of extension rule compliance (compliant/non-compliant/N/A per rule, with brief rationale for N/A determinations)
 
 **Conditional Enforcement**: Extensions may be conditionally enabled/disabled. See `inception/requirements-analysis.md` for the opt-in mechanism. Before enforcing any extension at ANY stage, check its `Enabled` status in `aidlc-docs/aidlc-state.md` under `## Extension Configuration`. Skip disabled extensions and log the skip in audit.md. Default to enforced if no configuration exists. 
+
+## MANDATORY: Integrations Discovery (Not Enforcement)
+
+**CRITICAL**: At workflow start, scan the `integrations/` directory recursively but DO NOT load any integration rule files or probe any tools at this point. Only `common/integrations.md` (loaded with common rules) governs runtime behavior.
+
+- Probing, user selection, and activation happen exclusively in the **Integration Selection** stage (see `inception/integration-selection.md`).
+- Full integration rule files (`integrations/<name>/<name>.md`) are loaded only after the user activates the corresponding integration during Integration Selection.
+- Stage files MUST NOT probe, activate, or reference specific integrations by name. All usage is governed by `common/integrations.md`'s capability-matching decision rule at runtime.
+
+Integrations differ from extensions:
+
+- **Extensions** encode methodology constraints (security, testing discipline). They opt in during Requirements Analysis via a user question and are **blocking** — non-compliance prevents stage completion.
+- **Integrations** bind AI-DLC to external tools (MCP servers, CLIs, services) that accelerate stages. They opt in during Integration Selection (the first user-facing stage) and are **non-blocking** — stages fall back to the default path when an integration is unavailable or fails.
 
 ## MANDATORY: Content Validation
 **CRITICAL**: Before creating ANY file, you MUST validate content according to `common/content-validation.md` rules:
@@ -85,6 +99,7 @@ All subsequent rule detail file references (e.g., `common/process-overview.md`, 
 **Focus**: Determine WHAT to build and WHY
 
 **Stages in INCEPTION PHASE**:
+- Integration Selection (ALWAYS)
 - Workspace Detection (ALWAYS)
 - Reverse Engineering (CONDITIONAL - Brownfield only)
 - Requirements Analysis (ALWAYS - Adaptive depth)
@@ -95,7 +110,31 @@ All subsequent rule detail file references (e.g., `common/process-overview.md`, 
 
 ---
 
+## Integration Selection (ALWAYS EXECUTE — RUNS FIRST)
+
+**This is the FIRST stage of every AI-DLC workflow. It runs before Workspace Detection.**
+
+**CRITICAL**: Integration Selection is a separate, standalone stage. The model MUST:
+- Present the Integration Selection message (from `inception/integration-selection.md`) as its own standalone interaction
+- WAIT for the user's selection response before starting Workspace Detection
+- NOT batch Integration Selection output together with Workspace Detection output in the same message
+- NOT say phrases like "Let's begin with Workspace Detection and Integration Selection" — these are sequential stages, not concurrent
+
+1. **MANDATORY**: Log any user input during this stage in audit.md
+2. Load all steps from `inception/integration-selection.md`
+3. Execute integration selection:
+   - Discover all integrations under `integrations/`
+   - Run silent probes (reachability, workspace match)
+   - Present combined selection message to user and WAIT for response
+   - Run integration-specific opt-in prompts only for `Needs Setup` integrations the user chose to configure
+   - Activate selected integrations (load their rule files) and record status in `aidlc-state.md`
+4. **No approval gate, but the selection question IS an interaction gate** — the model MUST wait for the user's selection response before proceeding to Workspace Detection
+5. **MANDATORY**: Log the selection outcome and any user responses in audit.md with complete raw input
+6. Automatically proceed to Workspace Detection
+
 ## Workspace Detection (ALWAYS EXECUTE)
+
+**Runs AFTER Integration Selection completes. This is a separate, user-visible stage — it MUST emit its own completion message before proceeding. Do NOT batch its output with the Integration Selection output.**
 
 1. **MANDATORY**: Log initial user request in audit.md with complete raw input
 2. Load all steps from `inception/workspace-detection.md`

@@ -29,6 +29,7 @@
 **Location**: `inception/` directory
 
 **Stages**:
+- Integration Selection (ALWAYS)
 - Workspace Detection (ALWAYS)
 - Reverse Engineering (CONDITIONAL - Brownfield only)
 - Requirements Analysis (ALWAYS - Adaptive depth)
@@ -69,6 +70,7 @@
 ## Workflow Stages
 
 ### Always-Execute Stages
+- **Integration Selection**: Discover, probe, and activate external tool integrations for the session
 - **Workspace Detection**: Initial analysis of workspace state and project type
 - **Requirements Analysis**: Gathering requirements (depth varies based on complexity)
 - **Workflow Planning**: Creating execution plan for which phases to run

@@ -28,6 +28,7 @@ AI-DLC is a structured yet flexible software development process that adapts to 
         |     INCEPTION PHASE                   |
         |     Planning & Application Design     |
         +---------------------------------------+
+        | * Integration Selection (ALWAYS)      |
         | * Workspace Detection (ALWAYS)        |
         | * Reverse Engineering (COND)          |
         | * Requirements Analysis (ALWAYS)      |

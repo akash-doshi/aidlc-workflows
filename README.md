@@ -14,6 +14,7 @@ AI-DLC is an intelligent software development workflow that adapts to your needs
 - [Three-Phase Adaptive Workflow](#three-phase-adaptive-workflow)
 - [Key Features](#key-features)
 - [Extensions](#extensions)
+- [Integrations](#integrations)
 - [Tenets](#tenets)
 - [Prerequisites](#prerequisites)
 - [Troubleshooting](#troubleshooting)
@@ -620,6 +621,7 @@ Deployment and monitoring (future)
 | **Question-Driven**       | Structured multiple-choice questions in files, not chat                                                   |
 | **Always in Control**     | Review execution plans and approve each phase                                                             |
 | **Extensible**            | Layer custom rules e.g. security, compliance, and organization-specific rules on top of the core workflow |
+| **Integrations**          | Bind AI-DLC to external tools (MCP servers, CLIs) that accelerate brownfield stages; non-blocking         |
 
 ---
 
@@ -669,6 +671,64 @@ You can extend an existing category or create an entirely new one.
    - Include a **Verification** section with concrete checks the model should evaluate.
 3. Add a matching **opt-in file** using the naming convention `<name>.opt-in.md` (e.g., `compliance.opt-in.md`). See `security-baseline.opt-in.md` for the expected format. Omitting this file means the extension is always enforced with no user opt-out.
 4. Rules are blocking by default — if verification criteria are not met, the stage cannot proceed until the finding is resolved.
+
+---
+
+## Integrations
+
+AI-DLC also supports **integrations** that bind the workflow to external tools (MCP servers, CLIs, services). Integrations accelerate how stages do their work; they do not encode methodology constraints.
+
+Extensions vs integrations at a glance:
+
+| Property          | Extensions                                             | Integrations                                                                                            |
+| ----------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| Encodes           | Methodology constraints (security, testing discipline) | Tool bindings (MCP servers, CLIs, services)                                                             |
+| Opt-in trigger    | Question during Requirements Analysis                  | Integration Selection (first user-facing stage of the workflow)                                         |
+| Enforcement       | Blocking — stages fail if constraints are not met      | Non-blocking — stages fall back to the default path if unavailable                                      |
+| Stage coupling    | Stages may reference a specific extension's rules      | Stages never reference a specific integration; usage is capability-matched at runtime                   |
+| Location          | `aws-aidlc-rule-details/extensions/<category>/<name>/` | `aws-aidlc-rule-details/integrations/<name>/`                                                           |
+
+### How Integrations Work
+
+Each integration consists of two files placed in the same directory:
+
+- A **rules file** (e.g., `codekb.md`) declaring the tool's **capabilities** — the information needs it can serve, stated in neutral language. The file also lists tools, usage guidance, and failure handling. It does NOT contain stage-specific hooks.
+- An **opt-in file** (e.g., `codekb.opt-in.md`) containing the capability probe: reachability check, applicability scope, workspace-match logic, and (if needed) a user prompt.
+
+The flow:
+
+1. **Integration Selection stage** (runs once at the start of each workflow) discovers all integrations, runs their probes silently, and presents a combined selection to the user. Integrations the user activates are recorded as `Active` in `aidlc-docs/aidlc-state.md`.
+2. **Every stage thereafter** consults `common/integrations.md`, a stage-agnostic rule file that routes information needs to active integrations. When a stage needs information to proceed, it matches that need against the `## Capabilities` of Active integrations. If an integration covers the need, it is used; otherwise, the stage's default path runs. This is the only mechanism — no individual stage file knows any integration by name.
+3. **Non-blocking by construction.** A failed or unavailable integration never prevents a stage from completing.
+
+Adding a new integration (e.g., Figma MCP for design specs, Jira MCP for ticket context) means dropping two files under `integrations/<name>/`. No stage file changes.
+
+### Built-in Integrations
+
+The `integrations/` directory ships with the following:
+
+```text
+aws-aidlc-rule-details/
+└── integrations/
+    ├── codekb/
+    │   ├── codekb.md            # Capabilities, tools, usage guidance
+    │   └── codekb.opt-in.md     # Capability probe
+    └── figma/
+        ├── figma.md             # Capabilities, tools, usage guidance
+        └── figma.opt-in.md      # Capability probe
+```
+
+**CodeKB** — binds AI-DLC to the `code-knowledge-base` MCP server. Declared capabilities include semantic lookup by natural-language description, forward and reverse dependency queries, and call-graph traversal. When Active and a stage has an information need that matches these capabilities, CodeKB queries are preferred over filesystem scans. Most useful on brownfield projects.
+
+**Figma** — binds AI-DLC to a Figma MCP server (official remote server or compatible local server). Declared capabilities include reading design specifications for a selection or node, resolving design-system variables and styles, and looking up Figma-to-code mappings via Code Connect. When Active and a stage needs design context, Figma queries are preferred over asking the user for screenshots or prose descriptions.
+
+### Adding Your Own Integrations
+
+1. Create a directory under `integrations/` (e.g., `integrations/figma/` or `integrations/jira/`).
+2. Add a **rules file** (`<name>.md`) with these required sections: `## Overview`, `## Preconditions`, `## Capabilities`, `## Authoritative For` (optional), `## Tools`, `## Usage Guidance`, `## Failure Handling`. Declare capabilities in neutral language, NOT in terms of AI-DLC stages.
+3. Add a matching **opt-in file** (`<name>.opt-in.md`) with a probe that tests reachability silently, checks applicability (e.g., brownfield-only, frontend-only), optionally runs a workspace-match step, and defines a prompt for any `Needs Setup` case.
+4. Do not modify any stage file. The stage-agnostic decision rule in `common/integrations.md` handles runtime matching.
+5. Integrations MUST be non-blocking. A failed or unavailable integration must never prevent a stage from completing.
 
 ---
 
