@@ -8,3 +8,5 @@
 .env
 buildspec.yml
 codebuild_build.sh
+.kiro
+
