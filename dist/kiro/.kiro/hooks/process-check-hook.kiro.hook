@@ -1,11 +1,10 @@
 {
+  "name": "aidlc-run-process-checker",
   "version": "1.0.0",
-  "enabled": true,
-  "name": "Process Check After Agent",
   "description": "After every builder or validator sub-agent invocation, reminds the orchestrator to run process_checker and read the checkpoint before proceeding.",
   "when": {
     "type": "postToolUse",
-    "toolTypes": ["invoke_sub_agent"]
+    "toolTypes": [".*invokeSubAgent.*"]
   },
   "then": {
     "type": "askAgent",
