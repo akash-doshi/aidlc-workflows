@@ -21,7 +21,11 @@ Directed graph of all available stages. The orchestrator reads this during workf
 | wireframe-design | Design UI screens as HTML wireframes | aidlc-ux-designer-agent |
 | application-design | Design logical component structure, services, dependencies | aidlc-systems-architect-agent |
 | units-generation | Decompose application design into implementable units of work | aidlc-systems-architect-agent |
-| code-generation | Generate production code in layers | (tbd) |
+| functional-design | Design detailed business logic, domain entities, rules, and API spec per unit | aidlc-systems-architect-agent |
+| nfr-assessment | Operationalise NFRs into measurable targets and tech stack choices per unit | aidlc-systems-architect-agent |
+| nfr-design | Design patterns and logical components that satisfy NFR targets per unit | aidlc-systems-architect-agent |
+| infrastructure-design | Map logical components to infrastructure services and define deployment | aidlc-systems-architect-agent |
+| code-generation | Generate production code per unit with write-test-verify cycles | aidlc-sw-dev-engineer-agent |
 | build-and-test | Build, test, and verify the code | (tbd) |
 
 ## Dependencies
@@ -36,7 +40,11 @@ Stages have flexible inputs — they can start from multiple predecessors or dir
 | wireframe-design | stories + personas, requirements, intent |
 | application-design | requirements, stories, wireframes, RE artifacts |
 | units-generation | application-design (components + interactions must be known) |
-| code-generation | units-generation, application-design, stories, requirements |
+| functional-design | units-generation (unit definition + assigned stories + contracts) |
+| nfr-assessment | requirements.md (NFR section), functional-design artifacts for this unit |
+| nfr-design | nfr-assessment (targets + tech stack), functional-design artifacts, unit-contracts |
+| infrastructure-design | nfr-design (logical components + patterns), tech-stack-decisions |
+| code-generation | functional-design, nfr-assessment, nfr-design, infrastructure-design, units-generation, application-design, stories, requirements |
 | build-and-test | code-generation output |
 
 ## Composition Rules
