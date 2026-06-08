@@ -1,178 +1,113 @@
 ---
 name: aidlc-workflow-composition
 description: |
-  AI-DLC workflow-composition skill. Picks the skills that will run for this intent from the catalogue, sets per-skill flags, and appends the resulting lines to `workflow.md`.
-
-  Invoked by `aidlc-orchestrator` immediately after `aidlc-intent-bootstrap`. Not normally invoked directly.
-metadata:
-  phase: bootstrap
-  stage: workflow-composition
-  per-unit: "false"
-  human-clarification: "true"
-  plan-creation: "false"
-  plan-verification: "false"
-  artefact-verification: "true"
+  AI-DLC workflow composition. Composes the adaptive workflow conversationally with the human — selecting stages, assigning personas, and handling artifact sourcing. Read by the orchestrator after kickoff.
 ---
 
 # Workflow Composition
 
-Compose the adaptive workflow for this intent by selecting skills from `skills/aidlc-orchestrator/CATALOGUE.md` and rewriting `workflow.md`. The artefact-verification step is the workflow-approval gate — the human approves the composed workflow before any inception-phase skill runs.
+Compose the adaptive workflow for this intent. This is a conversation, not a form. Paraphrase what you understand, identify what's needed, ask the minimum questions to proceed, then propose.
 
-## Prerequisites
+## How to compose
 
-- `intent.md` at the intent root
-- `bootstrap-context.md` in `bootstrap/intent-bootstrap/`
+1. **Read `stages/stage-graph.md`** — understand what stages exist and their composition rules.
+2. **Paraphrase the intent** — restate what you understand in your own words. Show the human you get it.
+3. **Integration scan** — before composing, explicitly list ALL potential integrations and external dependencies you detect in the intent. Include borderline ones. Present them to the human and ask: "For any of these, do you have existing implementations or reference codebases I should study?" This determines whether reverse-engineering is needed. Look for: auth providers (SSO, OAuth, SAML), messaging APIs (WhatsApp, SMS, email), data APIs (ISBN, maps, weather), storage services (photo/file uploads), payment gateways, notification services, third-party SDKs, existing internal systems being connected to.
+4. **Existing artifacts scan** — if the human mentions they already have artifacts (stories, requirements, wireframes, designs, code), explicitly list what you detected and for each ask: skip the stage entirely, validate/review what they have, or augment it? Ask how to source them (paste, file path, MCP). Do not silently decide to skip — always confirm with the human what they want done with existing work.
+5. **Identify what's implied** — greenfield or brownfield? Simple or complex? What stages are obviously needed, what can be skipped?
+5. **Ask only what you can't infer** — don't ask 10 questions. Ask the 1-2 that actually affect the workflow (beyond the integration scan).
+6. **Propose the workflow** — present as a table with columns: #, Stage, Owner, Contributors, Reviewer. Add a brief rationale paragraph below the table. Use language like "Here's what I think we could do" and "What do you think?"
+7. **Offer to adjust** — after presenting the proposal, offer context-specific options derived from the actual workflow you just proposed. Examples of what to surface (pick what's relevant, not all):
+   - If contributors are included: "Run without reviews for a faster pass"
+   - If a stage could reasonably be skipped: "Drop [stage] if you want to defer that"
+   - If a reviewer is assigned: "Skip [reviewer] if this is exploratory"
+   - If a stage is missing that might add value: "Add [stage] if you want [benefit]"
+   
+   These should be actionable suggestions based on the proposed workflow, not generic boilerplate.
+8. **Handle artifacts the human already has** — if they mention existing docs, stories, or wireframes, ask how to source them (paste, file path, MCP) or offer to generate.
 
-## Input
+## Composition principles
 
-- `intent.md`
-- `bootstrap-context.md`
-- `skills/aidlc-orchestrator/CATALOGUE.md`
+- **Right-size aggressively** — a bug fix doesn't need requirements analysis. A full system does.
+- **Include contributors by default** — unless the human explicitly says prototype, POC, spike, or bug fix. The human can always say "skip reviews."
+- **Respect the human's preferred ordering** — if they say "wireframes first, then requirements", do that.
+- **Artifacts already provided = stage skipped** — if the human provides requirements.md, skip requirements-analysis (or offer to validate/augment it).
+- **Brownfield = check for existing context** — if org-ai-kb has context, use it. If not, propose reverse-engineering.
+- **Watch for brownfield cues** — when the intent mentions integrations (SSO, OAuth, SAML, payment, messaging APIs, third-party services) or modifications to existing systems, ask whether there's an existing implementation or reference codebase to learn from. This is a cue for reverse-engineering even in greenfield — "we're building new, but we have an existing SSO integration elsewhere we should study." Keywords: "SSO", "OAuth", "SAML", "integrate with", "connect to", "use our existing", "modify the", "extend the", "add to the current", "WhatsApp", "payment", "third-party".
+- **Do NOT surface path labels** (A, B, C, D) — those are internal reasoning. Just present the ordered list.
 
-## Question Guidance
+## Artifact sourcing
 
-Apply §1 to evaluate every catalogue skill against the intent. Derive what you can; ask only on genuine ambiguity. Examples:
+When the human references an existing artifact (a story, a requirement, a wireframe):
 
-- Should reverse-engineering run? (skip if RE-kb is hydrated)
-- For a tiny bug fix, should user-stories or application-design be skipped?
-- Any per-skill flag overrides (`plan-verification`, `artefact-verification`)?
+"I need the [artifact] to proceed. How would you like to provide it?
+a) Paste it here in chat
+b) Point me to a file path or MCP source
+c) I'll generate it for you — then you review"
 
-Additionally, evaluate lenses from the catalogue's "Lenses" section:
+Based on the answer: receive it, write it to the stage directory, set status to `artifact-generated`, then proceed (offer review or move to next stage).
 
-- Which lenses should be active for this intent? Present available lenses with their purpose and default-activation status.
-- For lenses with `default-activation: "true"`, confirm activation unless the intent clearly doesn't warrant it (e.g., OWASP for a documentation-only change).
-- For lenses with `default-activation: "false"`, ask whether the human wants to opt in.
-- For each activated lens, ask the lens's own Question Guidance (from its SKILL.md) to tailor the lens to this intent. Record answers in `bootstrap/workflow-composition/lens-<lens-name>-answers.md`.
+## Composition examples
 
-## 1. Composition Rules
+These are internal reasoning aids. Do not reference them by name to the human.
 
-1. Start from the catalogue; evaluate each skill against the intent. Never assume a fixed pipeline.
-2. **Right-sizing principle.** Three skills are essentially always-on: `requirements-analysis`, `code-generation`, `build-and-test`. Everything else is conditional. Skip aggressively when the intent is narrow in scope, low in novelty, single-actor, single-component, or pure implementation. Include only when the skill's output would meaningfully shape what comes next. A workflow that has every skill is rarely the right answer.
-3. When the right-sizing principle leaves you genuinely uncertain about a skill, lean toward including it.
-4. Construction skills with `per-unit: "true"` run once per unit. With one unit, collapse them into a single pass.
-5. The composed workflow is a recommendation, not a contract. The orchestrator may pause and insert a skipped skill mid-execution if needed.
-6. Do not reference the examples in §3 by name when presenting the workflow — they are internal reasoning aids.
-7. Only list skills that will execute. Do not list skipped skills.
-8. Reverse engineering:
-   - RE-kb hydrated for the affected repos → skip RE.
-   - Otherwise → one `reverse-engineering` invocation per repo that needs analysis.
-   - Greenfield with integration targets → RE those targets only.
-   - Brownfield → RE included by default for affected repos.
-9. **Human-facing vocabulary.** When presenting the workflow to the human, refer to each skill by its `stage` and `phase` from the catalogue (e.g. "user stories stage", "inception phase"). Use skill names only for internal reasoning and as disambiguators when one stage maps to multiple skills.
+**Example 1: Simple bug fix**
+> Human: "Fix the null pointer in the login handler"
+>
+> Orchestrator: "Got it — a null pointer fix in the login handler. That's a targeted brownfield bug fix. I'd suggest: code-generation. Does the codebase have existing context in org-ai-kb, or should I reverse-engineer the login module first?"
 
-## 2. Presentation
+**Example 2: Feature on existing system**
+> Human: "I want to work on story-2041: add a dropdown to an existing page"
+>
+> Orchestrator: "Story-2041 — adding a dropdown to an existing page. Small brownfield UI change. I need the story details. Would you like to paste it, point me to a file, or should I generate it from what you've described?
+>
+> For the implementation I'd suggest: code-generation. Do you want the code reviewed by a solutions architect, or is this straightforward enough to skip reviews?"
 
-Group the composition by phase → stage, in execution order. When one stage maps to one skill, the stage alone is enough. When multiple skills share a stage, list each as a sub-bullet with the skill name as disambiguator.
+**Example 3: Greenfield system**
+> Human: "Build a library management app with admin and member roles"
+>
+> Orchestrator: "A library management app — two roles, multiple features. Here's what I think we could do:
+>
+> | # | Stage | Owner | Contributors | Reviewer |
+> |---|---|---|---|---|
+> | 1 | Requirements analysis | aidlc-product-manager-agent | aidlc-systems-architect-agent | aidlc-product-lead-agent |
+> | 2 | Story generation | aidlc-product-manager-agent | aidlc-systems-architect-agent | aidlc-product-lead-agent |
+> | 3 | Wireframe design | aidlc-ux-designer-agent | aidlc-product-manager-agent, aidlc-systems-architect-agent | aidlc-product-lead-agent |
+> | 4 | Domain design | aidlc-app-architect-agent | aidlc-product-manager-agent | aidlc-architecture-reviewer-agent |
+> | 5 | Units generation | aidlc-app-architect-agent | aidlc-product-manager-agent | aidlc-architecture-reviewer-agent |
+> | 6 | Contract design | aidlc-app-architect-agent | aidlc-product-manager-agent | aidlc-architecture-reviewer-agent |
+> | 7 | Functional design | aidlc-systems-architect-agent | aidlc-product-manager-agent | aidlc-architecture-reviewer-agent |
+> | 8 | NFR design | aidlc-systems-architect-agent | — | aidlc-architecture-reviewer-agent |
+> | 9 | Infrastructure design | aidlc-systems-architect-agent | — | aidlc-architecture-reviewer-agent |
+> | 10 | Code generation | aidlc-sw-dev-engineer-agent | aidlc-systems-architect-agent | aidlc-code-reviewer-agent |
+>
+> Rationale: full system with auth, integrations, and two user roles warrants the complete workflow with reviews.
+>
+> A couple of questions:
+> 1. Do you want architecture review at each stage? I'd recommend it, but if you want a faster pass I can skip.
+> 2. Any existing artifacts (requirements, wireframes, designs) you want to bring in?"
 
-```
-Proposed workflow
+**Example 4: Human has artifacts**
+> Human: "I have a requirements doc and wireframes already. Start from stories."
+>
+> Orchestrator: "Got it — you have requirements and wireframes. I'll skip those stages. Can you point me to the files?
+>
+> Then I'll compose: story-generation → domain-design → units-generation → functional-design → code-generation. With your requirements and wireframes feeding into stories as context."
 
-Inception phase
-  1. Requirements analysis stage
-  2. User stories stage
-  3. Application design stage
-  4. Units generation stage
+**Example 5: Wireframes first**
+> Human: "We want to start with wireframes for a library app"
+>
+> Orchestrator: "Wireframes first — makes sense for a UI-heavy app. I'll compose: wireframe-design as the primary stage.
+>
+> Do you want an architecture review on the wireframes, or keep it lightweight?"
 
-Construction phase (per unit: <unit-name>)
-  5. Functional design stage
-  6. NFR assessment stage
-  ...
-```
-
-## 3. Examples
-
-Examples are arranged from minimal to maximal. Each notes what was **skipped** and why — that's where the right-sizing reasoning lives.
-
-### A. Trivial bug fix — typo, off-by-one, missing null check (greenfield or brownfield)
-
-**Workflow:** requirements-analysis → code-generation → build-and-test.
-
-(For brownfield: prepend reverse-engineering for the affected repo if RE-kb is not hydrated.)
-
-**Skipped:** user-stories (no new user-facing behaviour), application-design (no component changes), units-generation (one trivial change), functional-design (no new domain logic), nfr-assessment (no NFR shift), nfr-design, infrastructure-design.
-
-### B. Simple single-component utility — calculator, string parser, CSV exporter, CLI tool
-
-**Workflow:** requirements-analysis → code-generation → build-and-test.
-
-**Skipped:** user-stories (one obvious actor, one happy path), application-design (single component, no orchestration), units-generation (one unit, trivially), functional-design (logic is the requirements), nfr-assessment (defaults are fine), nfr-design, infrastructure-design.
-
-A calculator does not need a story map and a domain model. The requirements doc captures the operations; the build-and-test skill catches mistakes. If during code-generation a real ambiguity surfaces (rounding rules, error semantics), pause and insert functional-design — that's what rule 5 is for.
-
-### C. Refactor with no behaviour change — rename, extract, restructure (brownfield)
-
-**Workflow:** reverse-engineering → requirements-analysis → application-design → code-generation → build-and-test.
-
-**Skipped:** user-stories (no behaviour change, hence no new stories), units-generation (single unit unless the refactor is huge), functional-design (business logic is preserved verbatim), nfr-assessment (NFRs don't change), nfr-design, infrastructure-design.
-
-Application design is in because the whole point of a refactor is to change component boundaries.
-
-### D. Small feature add to an existing service — new endpoint, new field, new validation rule (brownfield)
-
-**Workflow:** reverse-engineering → requirements-analysis → user-stories → functional-design → code-generation → build-and-test.
-
-**Skipped:** application-design (existing component boundaries are reused), units-generation (one unit — the existing service), nfr-assessment (NFRs inherited from the service unless the feature changes them), nfr-design, infrastructure-design.
-
-Functional-design runs but with `--unit <existing-service-name>`, refining only the new business rules.
-
-### E. New feature requiring a new component in an existing system (brownfield)
-
-**Workflow:** reverse-engineering → requirements-analysis → user-stories → application-design → functional-design → nfr-assessment → code-generation → build-and-test.
-
-**Skipped:** units-generation (the new component is the unit), nfr-design and infrastructure-design (only if the existing infra absorbs the new component without changes — otherwise include them).
-
-### F. Migration — language, framework, database, or platform change (brownfield)
-
-**Workflow:** reverse-engineering → requirements-analysis → application-design → functional-design → nfr-assessment → nfr-design → infrastructure-design → code-generation → build-and-test.
-
-**Skipped:** user-stories (no new behaviour, just a different substrate), units-generation (existing component boundaries usually carry over).
-
-NFR design and infrastructure design are mandatory in a migration: that's where the migration lives.
-
-### G. Greenfield single-service system — small to medium scope
-
-**Workflow:** requirements-analysis → user-stories → application-design → functional-design → nfr-assessment → nfr-design → infrastructure-design → code-generation → build-and-test.
-
-**Skipped:** reverse-engineering (greenfield, no integration targets), units-generation (single unit).
-
-Per-unit construction skills run once with `--unit <service-name>`.
-
-### H. Greenfield multi-service system — full pipeline
-
-**Workflow:** requirements-analysis → user-stories → application-design → units-generation → functional-design (per unit) → nfr-assessment (per unit) → nfr-design (per unit) → infrastructure-design (per unit) → code-generation (per unit) → build-and-test.
-
-**Skipped:** reverse-engineering, unless the system integrates with existing repos that aren't in RE-kb — in which case RE those repos first.
-
-This is the textbook full pipeline. Most intents are not this; reach for it only when units-generation actually produces multiple units.
-
-### I. Cross-repo brownfield change — touching two or more existing repos
-
-**Workflow:** reverse-engineering (one per affected repo) → requirements-analysis → user-stories (if user-facing) → application-design → functional-design (per unit) → nfr-assessment (per unit) → code-generation (per unit) → build-and-test.
-
-**Skipped:** units-generation (the affected repos *are* the units; map them directly), nfr-design and infrastructure-design (include only if cross-repo NFRs or shared infra change).
-
-User-stories and application-design earn their place when the change spans repo boundaries — that's where the seams of the change get pinned down.
+**Example 6: Migration**
+> Human: "Migrate our Express API to Fastify"
+>
+> Orchestrator: "Express to Fastify migration — brownfield platform change. Does org-ai-kb have context on this repo, or should I reverse-engineer it?
+>
+> Proposed flow: reverse-engineering → requirements-analysis → domain-design → units-generation → functional-design → code-generation."
 
 ## Output
 
-### workflow.md (rewritten at the intent root)
-
-When this skill runs, `workflow.md` is a stub containing only the line that invoked this skill. Rewrite it from scratch with one line per chosen downstream skill, in execution order, per `aidlc-workflow-format.md`. Do not retain the bootstrap stub line; the first line must be a real downstream skill (typically `requirements-analysis` or `reverse-engineering`).
-
-Routing flags are required for non-inception skills, per `aidlc-workflow-format.md`: construction skills use `--unit <unit>` (per-unit) or `--phase construction` (single pass); operations skills use `--phase operations`; inception skills omit both.
-
-### intent-state.md — Active Lenses table
-
-Write the `## Active Lenses` table to `intent-state.md` with one row per activated lens. Format per `aidlc-state-schema.md`. This table is the orchestrator's source for lens injection throughout the intent.
-
-### lens-<lens-name>-answers.md (in this skill's output dir, one per activated lens)
-
-For each activated lens that has Question Guidance, record the one-time clarification answers. These files are passed to the builder alongside the lens's SKILL.md on every invocation.
-
-### workflow-rationale.md (in this skill's output dir)
-
-One short bullet per skill explaining inclusion or skip, grouped by phase. Additionally, one bullet per lens explaining activation or deactivation.
-
-## Validation
-
-See `validation-spec.md`.
+Persist the composed workflow as `workflow.json` in the intent directory per `conventions/workflow-schema.json`. This is the contract for this intent's execution. Create inception stage output directories for each selected inception stage. Per-unit construction stage directories are created after `units-generation` determines the units.

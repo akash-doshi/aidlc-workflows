@@ -10,3 +10,4 @@ buildspec.yml
 codebuild_build.sh
 .kiro
 
+.bkup-src/
