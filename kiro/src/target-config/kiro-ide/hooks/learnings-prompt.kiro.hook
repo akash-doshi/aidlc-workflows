@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "enabled": true,
+  "name": "aidlc-learnings-prompt",
+  "description": "After a stage completes, prompts the orchestrator to capture any corrections or preferences expressed during the stage into team memory.",
+  "when": {
+    "type": "postToolUse",
+    "toolTypes": ["invoke_sub_agent"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A sub-agent just completed. Check if the human expressed any preferences, corrections, or decisions during this stage that should persist for future intents. If yes, append to org-ai-kb/<team>/memory/preferences.md (for format/style preferences) or corrections.md (for NEVER/ALWAYS rules). Use format: '- YYYY-MM-DD — [learning] (source: intent-NNN, stage: [stage-name])'. If nothing notable, proceed without writing."
+  }
+}
