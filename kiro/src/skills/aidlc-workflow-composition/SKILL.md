@@ -28,6 +28,14 @@ From workspace state + intent language + existing artifacts, classify internally
 
 Read `org-ai-kb/<team>/memory/preferences.md` and `org-ai-kb/<team>/memory/corrections.md`.
 
+**Autonomy modes (know these — don't ask the human to clarify):**
+
+| Mode | Meaning |
+|---|---|
+| `supervised` | Human answers questions AND reviews the final artifact |
+| `guided` | Human answers questions, artifact auto-approves (no human review of output) |
+| `full` | No human involvement — AI self-answers questions and auto-approves |
+
 If preferences exist, surface them for confirmation:
 
 > "I see these team preferences:
