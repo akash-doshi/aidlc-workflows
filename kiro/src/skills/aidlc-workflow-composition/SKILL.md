@@ -97,6 +97,8 @@ The autonomy mode MUST be stated in the header (e.g., "— supervised", "— gui
 
 **CRITICAL: Contributors and reviewers in the proposal and options MUST come from the stage's `definition.md`.** Read the stage definition's `## Contributors` and `## Reviewer` sections. Only propose personas listed there. Do NOT invent contributors or reviewers that don't exist in the stage definition.
 
+**CRITICAL: Stage names MUST come from `stages/stage-graph.md`.** Use the exact stage directory names listed there (e.g., `story-generation`, NOT `user-story-decomposition`). Read stage-graph.md before proposing stages. The stage name you use in the proposal is what gets registered in workflow.json and state.json, and determines the output directory path.
+
 **STOP HERE. Wait for the human to respond before executing the stage.**
 
 Once the human approves (or modifies and approves), ask about templates:
