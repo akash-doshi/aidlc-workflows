@@ -16,7 +16,7 @@ For each stage:
 2. Verify inputs exist (outputs from prior stages)
 3. **Stage brief + template check:**
    - Compose a brief statement explaining what will happen: inputs, outputs, what's needed from the human.
-   - **If this stage's autonomy is guided or supervised:** Ask "Do you have a template or format preference for this stage's output? (provide file/paste, or skip)" If provided, save to `org-ai-kb/<team>/memory/templates/<output-filename>` for future use.
+   - **MANDATORY for guided and supervised stages:** Before invoking the persona, ask the human: "Do you have a template or format preference for this stage's output? (provide a file, paste it, or say 'skip')" **Do NOT skip this question.** If provided, save to `org-ai-kb/<team>/memory/templates/<output-filename>` for future use. If skipped, proceed with existing team template or framework default.
    - **If full autonomy:** Skip the template question (templates were requested once before the first stage — see below).
 4. Drive the stage execution cycle (below)
 5. After stage completes, update `state/state.json` outputs array with each output as `{"name": "<filename>", "locationRelativeToIntentRoot": "<path>/"}`

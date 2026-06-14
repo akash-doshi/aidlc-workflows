@@ -2,13 +2,13 @@
   "version": "1.0.0",
   "enabled": true,
   "name": "aidlc-learnings-prompt",
-  "description": "After a stage completes, prompts the orchestrator to capture any corrections or preferences expressed during the stage into team memory.",
+  "description": "After a stage completes, saves any user composition choices (autonomy, contributors, reviewer) to team preferences for future intents.",
   "when": {
     "type": "postToolUse",
     "toolTypes": ["invoke_sub_agent"]
   },
   "then": {
     "type": "askAgent",
-    "prompt": "A sub-agent just completed. Check if the human expressed any preferences, corrections, or decisions during this stage that should persist for future intents. If yes, append to org-ai-kb/<team>/memory/preferences.md (for format/style preferences) or corrections.md (for NEVER/ALWAYS rules). Use format: '- YYYY-MM-DD — [learning] (source: intent-NNN, stage: [stage-name])'. If nothing notable, proceed without writing."
+    "prompt": "A sub-agent just completed. Save the human's composition choices for this stage to org-ai-kb/<team>/memory/preferences.md. Record: which stage, what autonomy mode was chosen, which contributors and reviewer were included/excluded. Use format: '- YYYY-MM-DD — [stage]: [autonomy], contributors: [list or none], reviewer: [name or none] (source: intent-NNN)'. Always save — do not judge whether it's 'worth recording'. Also: if the human provided any corrections or format preferences during this stage, append those to corrections.md or preferences.md respectively."
   }
 }
