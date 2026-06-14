@@ -99,7 +99,13 @@ The autonomy mode MUST be stated in the header (e.g., "— supervised", "— gui
 
 **STOP HERE. Wait for the human to respond before executing the stage.**
 
-Once the human approves (or modifies and approves), register the stage in BOTH workflow.json and state.json:
+Once the human approves (or modifies and approves), ask about templates:
+
+> "Do you have a template or format preference for this stage's output? (provide a file, paste it, or say 'skip')"
+
+If provided, save to `org-ai-kb/<team>/memory/templates/<output-filename>`. If skipped, use existing team template or framework default. **Do NOT skip this question for guided and supervised stages.**
+
+Then register the stage in BOTH workflow.json and state.json:
 
 ```bash
 node .kiro/tools/workflow-manager.js add-stage \
