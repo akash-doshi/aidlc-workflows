@@ -1,0 +1,26 @@
+Sr No,Skill,Description
+1,aidlc-requirements-analysis-skill,"Elicit, decompose, and structure ambiguous intent into a verifiable, complete specification."
+2,aidlc-user-story-decomposition-skill,"Break requirements into small, independently implementable stories with clear acceptance criteria. EARS format"
+3,aidlc-ux-design-skill,"Translate requirements and stories into screens, navigation, and interaction structure."
+4,aidlc-reverse-engineering-skill,"Performs reverse engineering on the codebases to elicit the business context, application architecutre, deployment architecture and other practices including coding styles, testing and logging patterns etc."
+5,aidlc-domain-modeling-skill,"Model the business domain into entities, aggregates, and bounded contexts with their rules and language."
+6,aidlc-units-decomposition-skill,"Carve the system into cohesive units with clear responsibilities, boundaries, and dependency directions."
+7,aidlc-api-design-skill,"Design clear, versioned, backward-compatible contracts between units and services. Create API Specification."
+8,aidlc-data-modeling-skill,"Model data and choose access patterns and storage shape (relational, document, key-value, event log)."
+9,aidlc-reliability-engineering-skill,"Design for failure with redundancy, graceful degradation, and RTO/RPO recovery objectives."
+10,aidlc-operational-excellence-skill,"Design for operational readiness — runbooks, change management, and day-2 operations from the start."
+11,aidlc-performance-engineering-skill,"Set measurable performance budgets and design to meet them — load modeling, bottleneck analysis, caching, and capacity."
+12,aidlc-cost-optimizer-skill,Another well-architected skill. Focuses on how to design systems that are cost effective.
+13,aidlc-security-engineering-skill,
+14,aidlc-scalability-engineering-skill,
+15,aidlc-observability-engineering-skill,"Design metrics, logs, traces, and SLOs/SLIs so the system is debuggable in production."
+16,aidlc-infrastructure-as-code-skill,"Express infrastructure declaratively in logical, testable, guarded units."
+17,aidlc-devops-skill,"There is an overlapping skill in the industry called -devops-skill. This person writes IaC code, monitors production systems, resolves operational issues etc"
+18,aidlc-test-engineering-skill,"Design layered testing (unit, integration, contract, end-to-end) balancing coverage against cost."
+19,aidlc-continuous-delivery-skill,Build deterministic artifacts and promote them through environments with policy gates.
+20,aidlc-coding-skill,Understands backend-end frameworks. Writes code
+21,aidlc-front-end-engineer-skill,"Understands front-end frameworks. Skilled in HTML, CSS, JS etc. Builds front-end code"
+22,aidlc-architecture-review-skill,Reviews architecture for NFRs and compliance to organizational standards (allow listed service etc)
+23,aidlc-code-review-skill,
+24,aidlc-work-method,"common skill that describes how to work in aidlc, plan ask questions generate artifact review refine etc"
+25,aidlc-user-empathy,

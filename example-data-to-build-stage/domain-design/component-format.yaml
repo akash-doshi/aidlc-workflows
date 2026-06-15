@@ -1,0 +1,60 @@
+Component: Component A
+Behaviour-description: This component does abcxyz
+Dependency: 
+  - Component:
+        Name: Component B
+        Interaction: Component A calls component B for abcxyz
+  - Component:
+        Name: Component C
+        Interaction: Component A calls component C for defstu    
+Dependent-Component: []
+Entities:
+  Entity-AA:
+    Attributes:
+      - attr-a
+      - attr-b
+      - attr-c
+  Entity-AB:
+    Attributes:
+      - attr-e
+      - attr-f
+
+---
+
+Component: Component B
+Behaviour-description: This component does abcxyz
+Dependency: []
+Dependent-Component: 
+  - Component:
+        Name: Component A
+        Interaction: Component A calls component B for abcxyz
+Entities:
+  Entity-BA:
+    Attributes:
+      - attr-a
+      - attr-b
+      - attr-c
+  Entity-BB:
+    Attributes:
+      - attr-e
+      - attr-f
+
+---
+
+Component: Component C
+Behaviour-description: This component does abcxyz
+Dependency: []
+Dependent-Component: 
+  - Component:
+        Name: Component A
+        Interaction: Component A calls component C for defstu
+Entities:
+  Entity-CA:
+    Attributes:
+      - attr-a
+      - attr-b
+      - attr-c
+  Entity-CB:
+    Attributes:
+      - attr-e
+      - attr-f

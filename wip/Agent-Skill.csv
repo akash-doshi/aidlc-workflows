@@ -1,0 +1,33 @@
+No,Agent,Description,Skills,Stages
+,aidlc-product-manager-agent,,"aidlc-requirements-analysis-skill
+aidlc-user-story-decomposition-skill
+aidlc-user-empathy-skill
+aidlc-work-method",
+,aidlc-ux-designer-agent,,"aidlc-ux-design-skill
+aidlc-work-method",
+,aidlc-sw-dev-engineer-agent,full stack engineer or AWS SDE equivalent,"
+aidlc-full-stack-development-skill
+aidlc-work-method",
+,aidlc-systems-architect-agent,"AWS PE equivalent. Reviews Architecture, Code. Responsbile for NFR verification","aidlc-reverse-engineering-skill
+aidlc-domain-modeling-skill
+aidlc-units-decomposition-skill
+aidlc-api-design-skill
+aidlc-data-modeling-skill
+aidlc-reliability-engineering-skill
+aidlc-operational-excellence-skill
+aidlc-performance-engineering-skill
+aidlc-scalability-engineering-skill
+aidlc-observability-engineering-skill
+aidlc-infrastructure-as-code-skill
+aidlc-work-method",
+,aidlc-security-architect-agent,"AppSec, InfoSec engineer","aidlc-security-engineering-skill
+aidlc-work-method",
+,aidlc-risk-compliance-agent,"Compliance managers responsbile for compliance enforcements and audits like SOC1, HIPAA etc.","aidlc-risk-analysis-skill
+aidlc-work-method",
+,aidlc-sw-tester-agent,,"aidlc-test-engineering-skill
+aidlc-code-writing-skill",
+,,,,
+,,,,
+,aidlc-architecture-reviewer-agent,Architecture review board,aidlc-architecture-trade-off-analysis-skill,
+,aidlc-code-reviewer-agent,,aidlc-code-review-skill,
+,aidlc-sw-quality-reviewer,,"Reviews all testing and code-quality outcome (complexity, vulnerability etc.)",

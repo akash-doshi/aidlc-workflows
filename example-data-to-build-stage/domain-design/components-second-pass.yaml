@@ -1,0 +1,290 @@
+Component: Authentication
+Behaviour-description: Handles user registration (email/password with composition rules), email verification, login, password reset (time-limited single-use tokens), session management (24h inactivity expiry, password-change invalidation), rate limiting on auth endpoints (5 failed attempts per account per 15min, 10 requests per IP per minute), and account lockout. Stores auth tokens in httpOnly Secure SameSite=Strict cookies. Passwords hashed with bcrypt (cost >=10) or argon2.
+Dependency:
+  - Component:
+        Name: Email Service
+        Interaction: Authentication calls Email Service to send verification emails and password reset tokens
+  - Component:
+        Name: Audit Log
+        Interaction: Authentication calls Audit Log to record login successes/failures, password changes, and account lockouts
+Dependent-Component:
+  - Component:
+        Name: API Gateway
+        Interaction: API Gateway calls Authentication to validate sessions and enforce authorization on every request
+Entities:
+  User:
+    Attributes:
+      - id
+      - email
+      - password_hash
+      - display_name
+      - role (Admin | Player)
+      - email_verified
+      - created_at
+      - updated_at
+  Session:
+    Attributes:
+      - id
+      - user_id
+      - token
+      - created_at
+      - last_active_at
+      - expires_at
+      - is_valid
+  PasswordResetToken:
+    Attributes:
+      - id
+      - user_id
+      - token_hash
+      - created_at
+      - expires_at
+      - used
+
+---
+
+Component: API Gateway
+Behaviour-description: Central entry point for all client requests. Enforces role-based access control (Admin, Player) at the API layer on every request regardless of frontend state. Validates authorization from authenticated session before processing. Returns 403 for unauthorized access. Applies CSRF protection via SameSite cookie attribute and origin header validation. Enforces TLS 1.2+ and HSTS. Validates and sanitizes all user-supplied input (length limits and character set).
+Dependency:
+  - Component:
+        Name: Authentication
+        Interaction: API Gateway calls Authentication to validate session tokens and retrieve user role claims
+  - Component:
+        Name: Audit Log
+        Interaction: API Gateway calls Audit Log to record security-relevant request metadata
+Dependent-Component:
+  - Component:
+        Name: Web Application
+        Interaction: Web Application sends all API requests through API Gateway
+Entities:
+  RateLimitEntry:
+    Attributes:
+      - key (IP or user_id)
+      - endpoint_category
+      - request_count
+      - window_start
+      - window_duration
+
+---
+
+Component: Topic Management
+Behaviour-description: Allows Admins to create, edit, and delete topics. Enforces unique topic names (case-insensitive). Topic names limited to 100 characters. Deletion soft-removes a topic from the playable list and removes associated questions from the active bank, but preserves the topic name (marked as "[deleted]") for historical quiz records.
+Dependency:
+  - Component:
+        Name: Audit Log
+        Interaction: Topic Management calls Audit Log to record admin CRUD operations on topics
+Dependent-Component:
+  - Component:
+        Name: Question Management
+        Interaction: Question Management depends on Topic Management to associate questions with a topic
+  - Component:
+        Name: Quiz Engine
+        Interaction: Quiz Engine calls Topic Management to retrieve the list of playable topics (those with >=10 questions)
+Entities:
+  Topic:
+    Attributes:
+      - id
+      - name
+      - is_active
+      - question_count
+      - created_at
+      - updated_at
+      - deleted_at
+
+---
+
+Component: Question Management
+Behaviour-description: Allows Admins to add, edit, and delete questions within a topic. Each question has question text (max 500 chars), exactly 4 options (max 200 chars each), and exactly 1 correct answer. Tracks question count per topic to determine playability (minimum 10 questions required). When a topic is deleted, its questions are removed from the active bank.
+Dependency:
+  - Component:
+        Name: Topic Management
+        Interaction: Question Management calls Topic Management to validate topic existence and update question counts
+  - Component:
+        Name: Audit Log
+        Interaction: Question Management calls Audit Log to record admin CRUD operations on questions
+Dependent-Component:
+  - Component:
+        Name: Quiz Engine
+        Interaction: Quiz Engine calls Question Management to randomly select 10 questions for a quiz session
+Entities:
+  Question:
+    Attributes:
+      - id
+      - topic_id
+      - question_text
+      - option_a
+      - option_b
+      - option_c
+      - option_d
+      - correct_option
+      - created_at
+      - updated_at
+
+---
+
+Component: Quiz Engine
+Behaviour-description: Manages the lifecycle of a quiz session. Enforces one active session per player at a time. Randomly selects 10 questions from a topic's bank (no duplicates within a session). Delivers questions to the client WITHOUT the correct answer. Tracks server-side session state (active question, serve timestamp). Validates answer submissions server-side (question belongs to active session, received within 10s + 500ms grace period, each question answered at most once, rate-limited to 1 submission per second). Computes final score atomically server-side. Awards +10 for correct, 0 for incorrect or unanswered. Auto-advances on timeout.
+Dependency:
+  - Component:
+        Name: Question Management
+        Interaction: Quiz Engine calls Question Management to fetch random questions for a topic
+  - Component:
+        Name: Topic Management
+        Interaction: Quiz Engine calls Topic Management to get list of playable topics
+  - Component:
+        Name: Scoring
+        Interaction: Quiz Engine calls Scoring to persist the final quiz score and update cumulative totals upon session completion
+Dependent-Component:
+  - Component:
+        Name: Web Application
+        Interaction: Web Application interacts with Quiz Engine to drive the gameplay flow (start quiz, submit answers, receive summary)
+Entities:
+  QuizSession:
+    Attributes:
+      - id
+      - player_id
+      - topic_id
+      - status (active | completed | forfeited)
+      - current_question_index
+      - started_at
+      - completed_at
+  QuizSessionQuestion:
+    Attributes:
+      - id
+      - session_id
+      - question_id
+      - question_order
+      - served_at
+      - answered_at
+      - selected_option
+      - is_correct
+      - points_awarded
+
+---
+
+Component: Scoring
+Behaviour-description: Persists completed quiz results. Maintains each player's cumulative lifetime total score. Calculates and stores per-quiz results (total score, correct count, incorrect count, unanswered count). Provides player quiz history (topic, score, date). Provides admin view of all player scores. Scores from deleted topics remain intact in history with topic marked as "[deleted]".
+Dependency: []
+Dependent-Component:
+  - Component:
+        Name: Quiz Engine
+        Interaction: Quiz Engine calls Scoring to write completed quiz results and update cumulative score
+  - Component:
+        Name: Leaderboard
+        Interaction: Leaderboard calls Scoring to retrieve cumulative scores for ranking
+  - Component:
+        Name: Web Application
+        Interaction: Web Application calls Scoring to display player quiz history
+Entities:
+  QuizResult:
+    Attributes:
+      - id
+      - player_id
+      - topic_id
+      - topic_name_snapshot
+      - score
+      - correct_count
+      - incorrect_count
+      - unanswered_count
+      - completed_at
+  PlayerScore:
+    Attributes:
+      - player_id
+      - total_cumulative_score
+      - quizzes_played
+      - last_played_at
+
+---
+
+Component: Leaderboard
+Behaviour-description: Displays a global all-time leaderboard ranked by total cumulative score (descending). Shows rank, player display name, and total score. Accessible to all authenticated users (both Admin and Player roles). Admin scores are included.
+Dependency:
+  - Component:
+        Name: Scoring
+        Interaction: Leaderboard calls Scoring to retrieve all players' cumulative scores for ranking
+Dependent-Component:
+  - Component:
+        Name: Web Application
+        Interaction: Web Application renders the leaderboard UI from Leaderboard data
+Entities:
+  LeaderboardEntry:
+    Attributes:
+      - rank
+      - player_id
+      - display_name
+      - total_score
+
+---
+
+Component: Web Application
+Behaviour-description: Mobile-responsive, PWA-capable web frontend. Renders all user-facing screens (registration, login, topic list, quiz gameplay with 10s countdown timer, quiz summary, player history, leaderboard, admin topic/question CRUD, admin score viewing). Timer accuracy within 500ms of actual elapsed time on the client. Responsive from 320px to 1920px viewports. Meets WCAG 2.1 AA for core flows. Serves web manifest and service worker for installability. Role-based UI (supplementary, not a security control). All state-changing requests go through the API Gateway.
+Dependency:
+  - Component:
+        Name: API Gateway
+        Interaction: Web Application sends all API requests through API Gateway
+  - Component:
+        Name: Quiz Engine
+        Interaction: Web Application interacts with Quiz Engine to drive quiz gameplay (question display, timer, answer submission)
+  - Component:
+        Name: Leaderboard
+        Interaction: Web Application calls Leaderboard to render the global ranking
+  - Component:
+        Name: Scoring
+        Interaction: Web Application calls Scoring to display player quiz history
+Dependent-Component: []
+Entities:
+  ClientQuizState:
+    Attributes:
+      - current_question
+      - timer_remaining
+      - questions_answered
+      - session_score
+
+---
+
+Component: Email Service
+Behaviour-description: Sends transactional emails for account verification and password reset. Integrates with an external SMTP or transactional email provider. Generates and delivers time-limited verification links and password reset links with cryptographically random tokens (min 128 bits entropy).
+Dependency: []
+Dependent-Component:
+  - Component:
+        Name: Authentication
+        Interaction: Authentication calls Email Service to send verification and password reset emails
+Entities:
+  EmailMessage:
+    Attributes:
+      - id
+      - recipient_email
+      - template_type (verification | password_reset)
+      - token_reference
+      - sent_at
+      - delivery_status
+
+---
+
+Component: Audit Log
+Behaviour-description: Records security-relevant events with structured logging. Captures successful/failed logins, password changes, role changes, account lockouts, and admin CRUD operations. Each log entry includes timestamp, user ID, action, IP address, and result. Logs retained for minimum 90 days. Logs must NOT contain plaintext passwords or tokens. Emits structured logs and key metrics (response time p50/p95/p99, error rate, active sessions). Supports alerting when error rate exceeds 1% or p95 latency exceeds 1s over a 5-minute window.
+Dependency: []
+Dependent-Component:
+  - Component:
+        Name: Authentication
+        Interaction: Authentication calls Audit Log to record auth events
+  - Component:
+        Name: API Gateway
+        Interaction: API Gateway calls Audit Log to record request-level security events
+  - Component:
+        Name: Topic Management
+        Interaction: Topic Management calls Audit Log for admin CRUD operations
+  - Component:
+        Name: Question Management
+        Interaction: Question Management calls Audit Log for admin CRUD operations
+Entities:
+  AuditEvent:
+    Attributes:
+      - id
+      - timestamp
+      - user_id
+      - action
+      - resource_type
+      - resource_id
+      - ip_address
+      - result (success | failure)
+      - metadata

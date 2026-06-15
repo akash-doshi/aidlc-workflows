@@ -8,9 +8,9 @@ AI-DLC v2 has five building blocks:
 ┌─────────────────────────────────────────────────────────────────┐
 │  SDLC: Made up of many stages                                   │
 │                                                                 │
-│  ┌──────────────────┐  ┌──────────────────┐                    │
-│  │ Requirements     │  │ User Stories     │  ...  Code Gen     │
-│  └──────────────────┘  └──────────────────┘                    │
+│  ┌──────────────────┐  ┌──────────────────┐                     │
+│  │ Requirements     │  │ User Stories     │  ...  Code Gen      │
+│  └──────────────────┘  └──────────────────┘                     │
 └─────────────────────────────────────────────────────────────────┘
          │
          ▼
@@ -25,15 +25,15 @@ AI-DLC v2 has five building blocks:
 └─────────────────────────────────────────────────────────────────┘
          │
          ▼
-┌──────────────────────────────┐     ┌────────────────────────────┐
-│  Owners, Contributors,       │     │  Conventions               │
-│  Reviewers ARE Personas      │     │                            │
+┌──────────────────────────────┐     ┌─────────────────────────────┐
+│  Owners, Contributors,       │     │  Conventions                │
+│  Reviewers ARE Personas      │     │                             │
 │  (agents)                    │     │  • Templates (output format)│
 │                              │     │  • Folder structure         │
 │  Personas HAVE Skills        │     │  • State schema             │
 │  (to perform tasks using     │     │  • Audit schema             │
-│   inference or tools)        │     │  • Workflow schema           │
-└──────────────────────────────┘     └────────────────────────────┘
+│   inference or tools)        │     │  • Workflow schema          │
+└──────────────────────────────┘     └─────────────────────────────┘
 ```
 
 ## Stages
