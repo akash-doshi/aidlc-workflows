@@ -29,13 +29,16 @@ files into ``.kiro/steering/aidlc-rules.md`` and sends a monolithic prompt.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
+import select
 import shutil
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 from cli_harness.adapter import AdapterConfig, AdapterResult, CLIAdapter
 from cli_harness.adapters._aidlc_state import (
@@ -52,6 +55,19 @@ from cli_harness.prompt_template import render_prompt, render_v2_prompt
 logger = logging.getLogger(__name__)
 
 _KIRO_CLI = "kiro-cli"
+
+# Reviewer subagents the conductor dispatches at gated stages. The shipped
+# dist trusts only the execution delegates (developer, architect), so under
+# headless `kiro-cli chat --no-interactive` a reviewer dispatch prompts for
+# permission with no TTY to answer it and the turn hangs (SKILL.md documents
+# that the stop-hook backstop does not fire headless). For autonomous
+# evaluation we add the reviewers to the *workspace copy's* trustedAgents so
+# dispatch auto-approves. The shipped dist is never modified.
+_REVIEWER_AGENTS = ("aidlc-product-lead-agent", "aidlc-architecture-reviewer-agent")
+
+# Per-turn idle backstop: if kiro-cli emits no output for this long, treat the
+# turn as hung and stop loudly rather than waiting out the overall timeout.
+_TURN_IDLE_TIMEOUT_S = 420  # 7 minutes of total silence
 
 # Matches ANSI escape sequences: CSI sequences (\x1b[...X), OSC sequences (\x1b]...\x07),
 # and simple two-byte escapes (\x1b followed by one char).
@@ -73,6 +89,28 @@ def _strip_ansi(text: str) -> str:
 def _log(msg: str) -> None:
     """Print a progress message to stderr."""
     print(f"  [kiro-cli] {msg}", file=sys.stderr, flush=True)
+
+
+def _patch_trusted_agents(kiro_dir: Path) -> None:
+    """Add the reviewer subagents to the workspace agent's trustedAgents.
+
+    Edits the run's *local copy* (``workspace/.kiro/agents/aidlc.json``), never
+    the shipped dist. Idempotent; no-ops if the file/structure is unexpected.
+    """
+    agent_file = kiro_dir / "agents" / "aidlc.json"
+    if not agent_file.is_file():
+        return
+    try:
+        data = json.loads(agent_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    sub = data.setdefault("toolsSettings", {}).setdefault("subagent", {})
+    trusted = sub.setdefault("trustedAgents", [])
+    added = [a for a in _REVIEWER_AGENTS if a not in trusted]
+    if added:
+        trusted.extend(added)
+        agent_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        _log(f"Trusted reviewer subagents (headless auto-approve): {', '.join(added)}")
 
 
 class KiroCLIAdapter(CLIAdapter):
@@ -147,6 +185,10 @@ class KiroCLIAdapter(CLIAdapter):
                     shutil.rmtree(kiro_dest)
                 shutil.copytree(config.kiro_dist_path, kiro_dest)
                 _log(f"Installed .kiro/ distribution from {config.kiro_dist_path}")
+
+                # Trust reviewer subagents so headless gated stages don't hang on
+                # an unanswerable permission prompt (patches the local copy only).
+                _patch_trusted_agents(kiro_dest)
 
                 # /aidlc <one-line intent> --scope <scope> --test-run
                 vision_content = config.vision_path.read_text(encoding="utf-8")
@@ -224,24 +266,68 @@ class KiroCLIAdapter(CLIAdapter):
                         env=child_env,
                     )
 
+                    # Read stdout with a per-turn IDLE guard: a blocking
+                    # `for line in stdout` would freeze indefinitely if kiro-cli
+                    # hangs (e.g. on a subagent dispatch with no TTY). Instead poll
+                    # with select() and bail if no output arrives for
+                    # _TURN_IDLE_TIMEOUT_S, or if the overall timeout is hit.
                     turn_output_lines: list[str] = []
-                    for line in process.stdout:
-                        log_file.write(_strip_ansi(line))
-                        log_file.flush()
-                        turn_output_lines.append(line)
-                        if self.verbose:
-                            sys.stderr.write(line)
-                            sys.stderr.flush()
+                    turn_hung = False
+                    last_output = time.monotonic()
+                    stdout_fd = process.stdout
+                    while True:
+                        ready, _, _ = select.select([stdout_fd], [], [], 5.0)
+                        if ready:
+                            line = stdout_fd.readline()
+                            if line == "":  # EOF — process finished writing
+                                break
+                            log_file.write(_strip_ansi(line))
+                            log_file.flush()
+                            turn_output_lines.append(line)
+                            last_output = time.monotonic()
+                            if self.verbose:
+                                sys.stderr.write(line)
+                                sys.stderr.flush()
+                            continue
+                        # No output this interval — check liveness and idle/overall limits.
+                        if process.poll() is not None:
+                            break  # process exited; drain remaining lines below
+                        now = time.monotonic()
+                        if now - last_output >= _TURN_IDLE_TIMEOUT_S:
+                            _log(
+                                f"Turn {turn} produced no output for "
+                                f"{_TURN_IDLE_TIMEOUT_S}s — treating as hung, killing"
+                            )
+                            process.kill()
+                            turn_hung = True
+                            break
+                        if now - start_time >= config.timeout_seconds:
+                            process.kill()
+                            _log(f"Overall timeout reached at turn {turn}")
+                            turn_hung = True
+                            break
 
-                    remaining = config.timeout_seconds - (time.monotonic() - start_time)
-                    if remaining <= 0:
+                    # Drain any buffered tail after EOF/exit.
+                    try:
+                        tail = stdout_fd.read()
+                    except (OSError, ValueError):
+                        tail = ""
+                    if tail:
+                        log_file.write(_strip_ansi(tail))
+                        log_file.flush()
+                        turn_output_lines.append(tail)
+
+                    try:
+                        process.wait(timeout=10)
+                    except subprocess.TimeoutExpired:
                         process.kill()
-                        _log(f"Timeout reached at turn {turn}")
-                        break
-                    process.wait(timeout=max(remaining, 10))
-                    total_rc = process.returncode
+                    total_rc = process.returncode if process.returncode is not None else -1
                     turn_output = "".join(turn_output_lines)
-                    _log(f"Turn {turn} exited with code {process.returncode}")
+                    _log(f"Turn {turn} exited with code {total_rc}")
+
+                    if turn_hung:
+                        _log("Stopping: turn hung (idle/overall timeout) — not a clean completion")
+                        break
 
                     aidlc_docs_dir = find_aidlc_docs(workspace)
                     file_count = (

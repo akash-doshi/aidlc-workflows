@@ -56,3 +56,53 @@ class TestClaudeCliPrereqs:
         monkeypatch.setattr(claude_cli_mod.shutil, "which", lambda cmd: f"/usr/bin/{cmd}")
         ok, msg = ClaudeCLIAdapter().check_prerequisites()
         assert ok is True
+
+
+class TestTrustedAgentsPatch:
+    def test_adds_reviewers(self, tmp_path):
+        import json
+
+        from cli_harness.adapters.kiro_cli import _patch_trusted_agents
+
+        agents = tmp_path / "agents"
+        agents.mkdir()
+        (agents / "aidlc.json").write_text(
+            json.dumps(
+                {
+                    "name": "aidlc",
+                    "toolsSettings": {
+                        "subagent": {
+                            "trustedAgents": ["aidlc-developer-agent", "aidlc-architect-agent"]
+                        }
+                    },
+                }
+            )
+        )
+        _patch_trusted_agents(tmp_path)
+        trusted = json.loads((agents / "aidlc.json").read_text())["toolsSettings"]["subagent"][
+            "trustedAgents"
+        ]
+        assert "aidlc-product-lead-agent" in trusted
+        assert "aidlc-architecture-reviewer-agent" in trusted
+
+    def test_idempotent_and_no_dupes(self, tmp_path):
+        import json
+
+        from cli_harness.adapters.kiro_cli import _patch_trusted_agents
+
+        agents = tmp_path / "agents"
+        agents.mkdir()
+        (agents / "aidlc.json").write_text(
+            json.dumps({"toolsSettings": {"subagent": {"trustedAgents": []}}})
+        )
+        _patch_trusted_agents(tmp_path)
+        _patch_trusted_agents(tmp_path)
+        trusted = json.loads((agents / "aidlc.json").read_text())["toolsSettings"]["subagent"][
+            "trustedAgents"
+        ]
+        assert trusted.count("aidlc-product-lead-agent") == 1
+
+    def test_missing_file_noops(self, tmp_path):
+        from cli_harness.adapters.kiro_cli import _patch_trusted_agents
+
+        _patch_trusted_agents(tmp_path)  # no agents/aidlc.json — must not raise
