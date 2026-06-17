@@ -28,7 +28,7 @@ Three execution paths are supported. All three funnel into the same 6-stage scor
   │  (packages/execution)│  │  (packages/cli-harness│        │  (packages/ide-harness│
   │                      │  │                       │        │                       │
   │  V1: Executor        │  │  Adapter: kiro-cli    │        │  Adapter: Cursor      │
-  │    + Simulator       │  │  Adapter: claude-code │        │  Adapter: Cline       │
+  │    + Simulator       │  │  Adapter: claude-cli  │        │  Adapter: Cline       │
   │  V2: Orchestrator    │  │                       │        │  Adapter: Kiro IDE    │
   │    + Simulator       │  │  Human Analog         │        │  Adapter: Copilot     │
   │    + Persona Agents  │  │  (Bedrock)            │        │  Adapter: Windsurf    │
@@ -82,7 +82,7 @@ The project uses a **uv workspace** with nine internal packages plus a CLI harne
 | `packages/contracttest`  | `aidlc-contracttest`  | API contract testing against OpenAPI specs                    |
 | `packages/nonfunctional` | `aidlc-nonfunctional` | NFR evaluation (tokens, timing, consistency)                  |
 | `packages/reporting`     | `aidlc-reporting`     | Consolidated report generation (Markdown + HTML)              |
-| `packages/cli-harness`   | (internal)            | Path B: programmatic CLI/SDK adapters (kiro-cli, claude-code) |
+| `packages/cli-harness`   | (internal)            | Path B: real-CLI terminal adapters (kiro-cli, claude-cli)     |
 | `packages/ide-harness`   | (internal)            | Path C: IDE interface automation (Cursor, Cline, Kiro, etc.)  |
 | `packages/shared`        | `aidlc-shared`        | Common utilities shared across packages                       |
 
@@ -166,11 +166,12 @@ Drives the AIDLC workflow through external CLI tools or SDKs. After execution, n
 
 #### Adapter Registry
 
-| Adapter Name  | Class               | Backend                                             |
-| ------------- | ------------------- | --------------------------------------------------- |
-| `kiro-cli`    | `KiroCLIAdapter`    | `kiro-cli chat` subprocess                          |
-| `claude-code` | `ClaudeCodeAdapter` | `claude-agent-sdk` Python package (SDK, fast)       |
-| `claude-cli`  | `ClaudeCLIAdapter`  | real `claude` CLI in a PTY (pexpect+pyte, fidelity) |
+Both adapters drive the **real vendor CLI in a terminal** — the genuine customer experience.
+
+| Adapter Name | Class              | Backend                                             |
+| ------------ | ------------------ | --------------------------------------------------- |
+| `kiro-cli`   | `KiroCLIAdapter`   | `kiro-cli chat` subprocess                          |
+| `claude-cli` | `ClaudeCLIAdapter` | real `claude` CLI in a PTY (pexpect+pyte, fidelity) |
 
 #### kiro-cli Adapter
 
@@ -178,7 +179,9 @@ Runs `kiro-cli chat --no-interactive --trust-all-tools` in a subprocess. **Requi
 
 **V1 mode** (no `--kiro-dist`): Concatenates all AIDLC rules markdown files into `.kiro/steering/aidlc-rules.md`. Sends a monolithic `EXECUTOR_SYSTEM_PROMPT`. Detects completion via `aidlc-docs/` quiescence.
 
-**V2 mode** (`--kiro-dist <path>`, auto-detected at `dist/kiro/.kiro`): Copies the built kiro distribution (`.kiro/` tree with agents, skills, stages, hooks, tools) into the workspace. The Kiro and Claude harnesses now share one `/aidlc` contract, so the adapter sends `/aidlc <intent> --scope <scope> --test-run` and detects completion the same way as claude-code — via markdown `aidlc-docs/aidlc-state.md` showing `- **Status**: Completed` plus generated source. Kiro reads Bedrock region/credentials from the host environment (no shipped settings); the adapter forwards `AWS_REGION` into the subprocess env. Scope (`--scope`, default `mvp`) and `--test-run` are shared with claude-code.
+**V2 mode** (`--kiro-dist <path>`, auto-detected at `dist/kiro/.kiro`): Copies the built kiro distribution (`.kiro/` tree with agents, skills, stages, hooks, tools) into the workspace. The Kiro and Claude harnesses now share one `/aidlc` contract, so the adapter sends `/aidlc <intent> --scope <scope> --test-run` and detects completion the same way as claude-cli — via markdown `aidlc-docs/aidlc-state.md` showing `- **Status**: Completed` plus generated source. Kiro reads Bedrock region/credentials from the host environment (no shipped settings); the adapter forwards `AWS_REGION` into the subprocess env. Scope (`--scope`, default `mvp`) and `--test-run` are shared with claude-cli.
+
+Headless `kiro-cli chat --no-interactive` has no Stop-hook backstop, so a turn can hang mid-stage; the adapter runs each turn in its own process group with a per-turn idle guard that kills a hung turn (and its subagent grandchildren) and finalizes to a scored report rather than hanging.
 
 **Multi-turn resume loop:** After each session expires (kiro-cli is stateless), the adapter:
 
@@ -186,24 +189,11 @@ Runs `kiro-cli chat --no-interactive --trust-all-tools` in a subprocess. **Requi
 2. If state shows a pending `Next Stage`/`In Progress`, sends a nudge to continue the forwarding loop
 3. Otherwise calls the **Human Analog** (Bedrock Simulator) to generate a response and resumes
 
-#### claude-code Adapter
-
-Uses the `claude-agent-sdk` Python package for fully programmatic execution. No subprocess management. **Requires `bun`** on PATH — the claude-code framework's tools and hooks run via `bun .claude/tools/*.ts`.
-
-**V2 mode** (`--claude-dist <path>`, auto-detected at `dist/claude/.claude`): Copies the claude distribution (`.claude/` tree) into the workspace, writes a `settings.local.json` overriding `AWS_REGION` to the run's region, and drives the `/aidlc <intent> --scope <scope> --test-run` skill. The skill runs its own self-directed forwarding loop over the 32-stage workflow. Scope (`--scope`, default `mvp`) controls how many stages run. Uses `ClaudeSDKClient` for multi-turn sessions.
-
-**AskUserQuestion interception:** The `can_use_tool` callback intercepts every `AskUserQuestion` tool call, routes it to the Bedrock Human Analog, and injects the answer back as structured `answers` — all within the running SDK session. Under `--test-run` (the default) the engine auto-approves gates, so this rarely fires.
-
-**Completion detection** (checked after every SDK turn):
-
-1. `aidlc-docs/aidlc-state.md` shows `Status: Completed` AND generated source exists in the workspace (language-agnostic) → done
-2. SDK returned non-success subtype → stop
-3. Agent output contains waiting signals → call Human Analog, resume with response
-4. `aidlc-state.md` shows an incomplete `Next Stage`/`In Progress` → send nudge prompt, continue loop
-
 #### claude-cli Adapter (terminal fidelity)
 
-The `claude-code` adapter embeds the **in-process SDK** — the "logic half." The `claude-cli` adapter instead drives the **real `claude` CLI in a pseudo-terminal**, reproducing the genuine customer experience the framework's own `tests/e2e` tui-drive tests exercise (the "render half"). Use `claude-code` for fast/cheap programmatic runs; use `claude-cli` to measure the actual terminal UX (permission modals, the AskUserQuestion widget render, the Stop-hook forwarding loop).
+The `claude-cli` adapter drives the **real `claude` CLI in a pseudo-terminal**, reproducing the genuine customer experience the framework's own `tests/e2e` tui-drive tests exercise. It measures the actual terminal UX (permission modals, the AskUserQuestion widget render, the Stop-hook forwarding loop). **Requires `bun`** on PATH — the Claude framework's tools and hooks run via `bun .claude/tools/*.ts`.
+
+**V2 mode** (`--claude-dist <path>`, auto-detected at `dist/claude/.claude`): Copies the claude distribution (`.claude/` tree) into the workspace, writes a `settings.local.json` overriding `AWS_REGION` to the run's region, and drives the `/aidlc <intent> --scope <scope> --test-run` skill. The skill runs its own self-directed forwarding loop over the 32-stage workflow. Scope (`--scope`, default `mvp`) controls how many stages run.
 
 It is the Python-native analogue of `tests/harness/tui-drive.ts`, built on a small driver (`adapters/_pty_terminal.py`):
 
@@ -212,7 +202,7 @@ It is the Python-native analogue of `tests/harness/tui-drive.ts`, built on a sma
 - Types `/aidlc <intent> --scope <scope> --test-run` like a customer, clears startup trust/bypass modals idempotently, and answers any visible gate by keystroke (Enter accepts the highlighted default).
 - **Detection is screen-based; termination is on-disk** — it stops only when `aidlc-docs/aidlc-state.md` shows `Status: Completed` plus generated code, never on a screen string. Timeouts are loud hang-backstops.
 
-Requires the `claude` CLI, `bun`, and a POSIX PTY (pexpect) — Windows falls back to the `claude-code` SDK adapter.
+Requires the `claude` CLI, `bun`, and a POSIX PTY (pexpect). Windows is not supported.
 
 ### 4.3 Path C: IDE Harness (`packages/ide-harness`)
 
@@ -291,7 +281,6 @@ RunnerConfig
 | `config/nova-premier.yaml`    | AWS Nova Premier                                  |
 | `config/mistral-large-3.yaml` | Mistral Large 3                                   |
 | `config/devstral-2.yaml`      | Mistral Devstral 2                                |
-| `config/kiro-v2-local.yaml`   | V2 Strands swarm with local kiro rules            |
 
 ### 5.4 Run Folder Naming
 
@@ -310,7 +299,7 @@ All entry points are exposed through `run.py` which dispatches to the appropriat
 | Command           | Script                     | Description                                    |
 | ----------------- | -------------------------- | ---------------------------------------------- |
 | `run.py full`     | `run_evaluation.py`        | Full pipeline: execute + score (Strands swarm) |
-| `run.py cli`      | `run_cli_evaluation.py`    | CLI adapter: kiro-cli or claude-code           |
+| `run.py cli`      | `run_cli_evaluation.py`    | CLI adapter: kiro-cli or claude-cli            |
 | `run.py ide`      | `run_ide_evaluation.py`    | IDE adapter: Cursor, Cline, Kiro IDE, etc.     |
 | `run.py batch`    | `run_batch_evaluation.py`  | Loop across multiple Bedrock models            |
 | `run.py compare`  | `run_comparison_report.py` | Cross-model comparison matrix                  |
@@ -667,7 +656,7 @@ Each contract test run creates an isolated venv inside the workspace project dir
 | Package manager         | uv (workspace mode)                      |
 | AI orchestration        | Strands Agents SDK                       |
 | CLI automation (kiro)   | kiro-cli subprocess                      |
-| CLI automation (claude) | claude-agent-sdk                         |
+| CLI automation (claude) | claude CLI in a PTY (pexpect + pyte)     |
 | LLM provider            | Amazon Bedrock (boto3, global endpoints) |
 | HTTP client             | httpx (contract tests)                   |
 | ASGI server             | uvicorn >= 0.34.2 (contract test server) |

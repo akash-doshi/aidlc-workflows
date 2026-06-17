@@ -15,7 +15,7 @@ All run scripts have been consolidated into this `scripts/` directory for better
   - Can run in test mode with `--test` flag
 
 - **run_cli_evaluation.py** - CLI-based evaluation
-  - Runs evaluation through CLI AI assistants (kiro-cli, claude-code, etc.)
+  - Runs evaluation through CLI AI assistants (kiro-cli, claude-cli)
   - Uses adapters from `packages/cli-harness`
 
 - **run_ide_evaluation.py** - IDE-based evaluation
@@ -52,14 +52,14 @@ All run scripts have been consolidated into this `scripts/` directory for better
 ### Stability Testing
 
 - **stability_batch.sh** - Concurrent stability batch runner
-  - Runs N waves of M concurrent `claude-code` evaluations (default 3×7) to measure
+  - Runs N waves of M concurrent `claude-cli` evaluations (default 3×7) to measure
     run-to-run variance on a fixed scenario
   - Each run is fully isolated (PID-stamped run folder, per-run rules clone); the only
     shared resource is Bedrock, and the script scans logs for throttling
   - Wave/concurrency counts are configurable via `WAVES=` / `PER_WAVE=` env vars
 
 - **stability_aggregate.py** - Stability metrics aggregator
-  - Scans recent `claude-code` run folders and reports mean/stddev/min/max for
+  - Scans recent `claude-cli` run folders (override with `--adapter`) and reports mean/stddev/min/max for
     unit-test %, contract pass count, and qualitative score, plus a reliability %
   - Distinguishes hard failures (no report) from completed-but-low-scoring runs
 

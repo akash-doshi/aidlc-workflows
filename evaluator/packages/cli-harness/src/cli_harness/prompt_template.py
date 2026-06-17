@@ -1,7 +1,7 @@
 """Standard AIDLC prompt template for CLI-based AI assistants.
 
 Adapted from the EXECUTOR_SYSTEM_PROMPT used by the Strands-based execution
-pipeline, but tailored for single-agent CLI tools (kiro-cli, claude-code)
+pipeline, but tailored for single-agent CLI tools (kiro-cli, claude-cli)
 that don't have a separate simulator agent for handoffs.
 """
 
@@ -119,7 +119,7 @@ V2_ORCHESTRATOR_PROMPT = "/aidlc {intent} --scope {scope}{test_run_flag}"
 
 
 def render_v2_prompt(intent: str, scope: str = "mvp", test_run: bool = True) -> str:
-    """Render the prompt that drives the claude-code `/aidlc` skill.
+    """Render the prompt that drives the `/aidlc` skill (claude-cli and kiro-cli).
 
     Args:
         intent: The development intent — a one-line summary of what to build.

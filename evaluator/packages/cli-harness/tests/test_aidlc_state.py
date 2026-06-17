@@ -1,6 +1,6 @@
 """Tests for the shared AIDLC harness state helpers and adapter conformance.
 
-Covers the contract both the claude-code and kiro-cli adapters now share:
+Covers the contract both the claude-cli and kiro-cli adapters now share:
 markdown `aidlc-docs/aidlc-state.md` completion + language-agnostic code detection.
 """
 

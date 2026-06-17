@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from cli_harness.adapter import CLIAdapter
 
-# Lazy imports to avoid pulling in adapter-specific deps at import time
+# Lazy imports to avoid pulling in adapter-specific deps at import time.
+# Both adapters drive the REAL vendor CLI in a terminal (customer fidelity):
+# kiro-cli via a `kiro-cli chat` subprocess, claude-cli via a PTY.
 _ADAPTER_MAP: dict[str, str] = {
     "kiro-cli": "cli_harness.adapters.kiro_cli.KiroCLIAdapter",
-    "claude-code": "cli_harness.adapters.claude_code.ClaudeCodeAdapter",
-    # PTY-driven real `claude` CLI (customer terminal fidelity); claude-code is
-    # the in-process SDK fast path.
     "claude-cli": "cli_harness.adapters.claude_cli.ClaudeCLIAdapter",
 }
 

@@ -281,13 +281,13 @@ Run the AIDLC evaluation through CLI-based AI assistants (Claude Code, Kiro CLI)
 uv run python run.py cli --list
 ```
 
-Supported adapters: `claude-code`, `kiro-cli`.
+Supported adapters: `claude-cli`, `kiro-cli`. Both drive the real vendor CLI in a terminal (customer fidelity) — `claude-cli` via a PTY, `kiro-cli` via a `kiro-cli chat` subprocess.
 
 ### Run CLI evaluation
 
 ```bash
-# Run evaluation through Claude Code
-uv run python run.py cli --cli claude-code \
+# Run evaluation through the real Claude CLI (PTY)
+uv run python run.py cli --cli claude-cli \
     --vision test_cases/sci-calc-v2/vision.md \
     --golden test_cases/sci-calc-v2/golden-aidlc-docs
 
@@ -298,7 +298,7 @@ uv run python run.py cli --cli kiro-cli \
     --model claude-sonnet-4
 
 # Check prerequisites for an adapter
-uv run python run.py cli --cli claude-code --check-only
+uv run python run.py cli --cli claude-cli --check-only
 ```
 
 Output is written to `runs/<cli-name>-<timestamp>-<uuid>/`. The CLI harness runs the adapter, then invokes `scripts/run_evaluation.py --evaluate-only` for scoring (stages 2–6).
@@ -310,7 +310,7 @@ Output is written to `runs/<cli-name>-<timestamp>-<uuid>/`. The CLI harness runs
 > assistants. The adapters are **not yet production-ready** — most lack a working
 > automation path and will exit with a clear "not implemented" message until the
 > IDE-automation bridges (ExTester/Playwright/CLI) are built out. For supported,
-> proven execution use the CLI harness (`claude-code`, `kiro-cli`) or the Strands
+> proven execution use the CLI harness (`claude-cli`, `kiro-cli`) or the Strands
 > execution path. Track progress in `docs/ide-harness-design.md`.
 
 Run the AIDLC evaluation through third-party IDE AI assistants using the IDE harness (`packages/ide-harness`).

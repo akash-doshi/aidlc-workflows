@@ -30,7 +30,7 @@ class AdapterConfig:
     # `/aidlc` skill instead of the v1 monolith prompt.
     claude_dist_path: Path | None = None
     # Scope passed to the `/aidlc` skill (e.g. "mvp", "poc", "feature"), shared by
-    # both the claude-code and kiro-cli adapters (the two harnesses now share one
+    # both the claude-cli and kiro-cli adapters (the two harnesses now share one
     # `/aidlc` contract). Controls how many of the 32 stages run.
     scope: str = "mvp"
     # When True, pass `--test-run` so the engine auto-approves gates and the

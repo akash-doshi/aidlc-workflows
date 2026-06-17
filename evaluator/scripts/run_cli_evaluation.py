@@ -14,10 +14,10 @@ Usage:
     python run_cli_evaluation.py --cli kiro-cli --check-only
 
     # Override rules ref (branch/tag/commit)
-    python run_cli_evaluation.py --cli claude-code --rules-ref v0.2.0
+    python run_cli_evaluation.py --cli claude-cli --rules-ref v0.2.0
 
     # Use local rules directory instead of git clone
-    python run_cli_evaluation.py --cli claude-code --rules-path /path/to/rules
+    python run_cli_evaluation.py --cli claude-cli --rules-path /path/to/rules
 """
 
 from __future__ import annotations
@@ -149,7 +149,7 @@ def main() -> None:
         "--cli",
         type=str,
         default="kiro-cli",
-        help="CLI adapter name (default: kiro-cli; e.g., kiro-cli, claude-code)",
+        help="CLI adapter name (default: kiro-cli; e.g., kiro-cli, claude-cli)",
     )
     parser.add_argument(
         "--list",
@@ -221,7 +221,7 @@ def main() -> None:
         default=None,
         help=(
             "Path to the claude .claude/ distribution directory "
-            "(e.g. dist/claude/.claude). When set, the claude-code "
+            "(e.g. dist/claude/.claude). When set, the claude-cli "
             "adapter copies it into the workspace and drives the /aidlc skill. "
             "Defaults to dist/claude/.claude relative to the git root. "
             "Requires bun on PATH."
@@ -231,7 +231,7 @@ def main() -> None:
         "--scope",
         default="mvp",
         help="Scope for the /aidlc skill (e.g. mvp, poc, feature). Shared by both "
-        "the claude-code and kiro-cli adapters. Default: mvp",
+        "the claude-cli and kiro-cli adapters. Default: mvp",
     )
     parser.add_argument(
         "--no-test-run",
@@ -359,11 +359,11 @@ def main() -> None:
 
     if claude_dist_path:
         print(
-            f"  Claude Code distribution: {claude_dist_path} "
+            f"  Claude distribution: {claude_dist_path} "
             f"(scope={args.scope}, test_run={not args.no_test_run})"
         )
     else:
-        print("  Claude Code distribution: not found — using v1 monolith prompt")
+        print("  Claude distribution: not found — using v1 monolith prompt")
 
     result, eval_rc = run_cli_evaluation(
         adapter=adapter,

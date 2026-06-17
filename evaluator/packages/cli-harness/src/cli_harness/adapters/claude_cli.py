@@ -1,15 +1,14 @@
 """Claude CLI adapter — drives the REAL ``claude`` CLI in a terminal (PTY).
 
-This is the high-fidelity counterpart to the ``claude-code`` adapter (which embeds
-the in-process ``claude-agent-sdk``). It launches the actual ``claude`` binary a
-customer would run, inside a pseudo-terminal, types ``/aidlc ...`` like a user,
-reads the rendered screen, answers approval-gate menus by keystroke, and detects
-completion from the on-disk ``aidlc-docs/aidlc-state.md`` state — exactly the
-journey the framework's own ``tests/e2e`` tui-drive tests exercise.
+It launches the actual ``claude`` binary a customer would run, inside a
+pseudo-terminal, types ``/aidlc ...`` like a user, reads the rendered screen,
+answers approval-gate menus by keystroke, and detects completion from the
+on-disk ``aidlc-docs/aidlc-state.md`` state — exactly the journey the
+framework's own ``tests/e2e`` tui-drive tests exercise.
 
-Use this when you want to measure the genuine customer terminal experience
-(permission modals, the AskUserQuestion widget render, the Stop-hook forwarding
-loop). Use ``claude-code`` (SDK) for fast, cheap, programmatic runs.
+This measures the genuine customer terminal experience (permission modals, the
+AskUserQuestion widget render, the Stop-hook forwarding loop). It is the Claude
+counterpart to the ``kiro-cli`` adapter — both drive the real vendor CLI.
 
 Requires: the ``claude`` CLI on PATH, ``bun`` (framework tools/hooks run via
 ``bun .claude/tools/*.ts``), and a POSIX PTY (pexpect — not supported on Windows).
@@ -58,8 +57,7 @@ class ClaudeCLIAdapter(CLIAdapter):
         """Verify the ``claude`` CLI, ``bun``, and a POSIX PTY are available."""
         if sys.platform == "win32":
             return False, (
-                "claude-cli (PTY) adapter is POSIX-only (uses pexpect). "
-                "Use the 'claude-code' SDK adapter on Windows."
+                "claude-cli (PTY) adapter is POSIX-only (uses pexpect). Windows is not supported."
             )
         if shutil.which(_CLAUDE_CLI) is None:
             return False, (
@@ -68,7 +66,7 @@ class ClaudeCLIAdapter(CLIAdapter):
             )
         if shutil.which("bun") is None:
             return False, (
-                "bun not found on PATH — required by the claude-code framework "
+                "bun not found on PATH — required by the AIDLC framework's Claude "
                 "tools/hooks. Install with `curl -fsSL https://bun.sh/install | bash` "
                 "and ensure bun's bin is on the non-interactive shell PATH (~/.zshenv)."
             )

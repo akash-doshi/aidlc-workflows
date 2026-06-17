@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stability batch runner for claude-code AIDLC evaluation.
+# Stability batch runner for claude-cli AIDLC evaluation.
 #
 # Runs 21 evaluations as 3 sequential waves of 7 concurrent runs each.
 # Each run is fully isolated (PID-stamped run folder, per-run rules clone,
@@ -20,8 +20,8 @@ echo "Per-run logs: $LOGDIR"
 
 run_one() {
   local tag="$1"
-  uv run python run.py cli --cli claude-code \
-    --claude-scope mvp \
+  uv run python run.py cli --cli claude-cli \
+    --scope mvp \
     --vision test_cases/sci-calc-v2/vision.md \
     --tech-env test_cases/sci-calc-v2/tech-env.md \
     --golden test_cases/sci-calc-v2/golden-aidlc-docs \

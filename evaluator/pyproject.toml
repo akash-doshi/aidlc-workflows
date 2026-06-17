@@ -16,7 +16,6 @@ dependencies = [
     "aidlc-trend-reports",
     "aidlc-cli-harness",
     "aidlc-ide-harness",
-    "claude-agent-sdk>=0.2.97",
 ]
 
 [tool.uv.workspace]

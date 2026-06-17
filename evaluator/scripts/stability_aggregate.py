@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Aggregate stability metrics across a batch of claude-code runs.
+"""Aggregate stability metrics across a batch of CLI-adapter runs.
 
-Scans every recent claude-code run folder, parses report.md for unit-test %,
-contract pass count, and qualitative score, and prints per-run rows plus
-mean / stddev / min / max. Distinguishes runs that produced no report (a hard
-failure — adapter or Bedrock died) from runs that completed but scored low.
+Scans every recent run folder for the chosen adapter, parses report.md for
+unit-test %, contract pass count, and qualitative score, and prints per-run
+rows plus mean / stddev / min / max. Distinguishes runs that produced no report
+(a hard failure — adapter or Bedrock died) from runs that completed but scored
+low.
 
 Usage:
-    python scripts/stability_aggregate.py [--since-minutes N] [--n N]
+    python scripts/stability_aggregate.py [--adapter NAME] [--since-minutes N] [--n N]
 """
 
 from __future__ import annotations
@@ -53,14 +54,19 @@ def main() -> None:
         default=720,
         help="Only consider run folders modified within this window (default 12h)",
     )
-    ap.add_argument("--n", type=int, default=None, help="Cap to the N most recent claude-code runs")
+    ap.add_argument(
+        "--adapter",
+        default="claude-cli",
+        help="Adapter run-folder suffix to scan (e.g. claude-cli, kiro-cli). Default: claude-cli",
+    )
+    ap.add_argument("--n", type=int, default=None, help="Cap to the N most recent runs")
     args = ap.parse_args()
 
     cutoff = datetime.now(UTC) - timedelta(minutes=args.since_minutes)
     folders = sorted(
         (
             p
-            for p in RUNS.glob("*claude-code")
+            for p in RUNS.glob(f"*{args.adapter}")
             if datetime.fromtimestamp(p.stat().st_mtime, UTC) >= cutoff
         ),
         key=lambda p: p.stat().st_mtime,
