@@ -168,10 +168,28 @@ class ClaudeCLIAdapter(CLIAdapter):
                 if term.wait_for(r"Bypass Permissions mode", timeout=10, stable_ms=600):
                     term.send_line("2", enter=True)
 
-                # Wait for the prompt to be ready, then type the /aidlc command.
-                term.wait_for(r">|Welcome|aidlc|│", timeout=45, stable_ms=0)
-                term.send_line(aidlc_cmd, enter=True)
+                # Wait for the input to be genuinely READY before typing. The
+                # statusline paints "[AIDLC] ready" (no workflow) or a live phase
+                # line once the harness has loaded; require it to be byte-stable so
+                # we don't type into a still-painting TUI (which silently drops the
+                # keystrokes). Mirrors the e2e tui-drive readiness wait.
+                if not term.wait_for(r"\[AIDLC\]|❯", timeout=60, stable_ms=1200):
+                    _log("WARNING: input-ready marker not seen; typing anyway")
+
+                # Type the slash command literally (no Enter), let it settle so the
+                # TUI registers the full line, then submit Enter as a separate key.
+                term.send_line(aidlc_cmd, enter=False)
+                time.sleep(1.0)
+                term.send_key("Enter")
                 _log("Sent /aidlc command — driving forwarding loop")
+
+                # Confirm the command actually submitted: the input box should
+                # clear and the workflow should begin (state file appears). If not,
+                # retry the submit once (Enter can be swallowed mid-paint).
+                started_re = r"IDEATION|INITIALIZATION|Running|aidlc-orchestrate"
+                if not term.wait_for(started_re, timeout=45):
+                    _log("No workflow start detected — retrying submit (Enter)")
+                    term.send_key("Enter")
 
                 def _done() -> bool:
                     return state_status_completed(workspace) and has_generated_code(workspace)
