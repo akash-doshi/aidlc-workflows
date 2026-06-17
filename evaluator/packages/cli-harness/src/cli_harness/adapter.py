@@ -21,21 +21,21 @@ class AdapterConfig:
     aws_region: str | None = None
     scorer_model: str = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
     timeout_seconds: int = 7200  # 2 hours max
-    # Path to the .kiro/ distribution directory (v2 agentic execution).
-    # When set, the kiro adapter copies this into the workspace so Kiro
-    # picks up the skill, agent, hook, and protocol files natively.
+    # Path to the .kiro/ distribution directory (e.g. dist/kiro/.kiro). When set,
+    # the kiro adapter copies it into the workspace so Kiro picks up the `/aidlc`
+    # skill, agents, hooks, and tools natively and drives the forwarding loop.
     kiro_dist_path: Path | None = None
-    # Path to the claude-code dist/claude/.claude/ directory (the surviving
-    # claude-code framework). When set, the claude adapter copies it into the
-    # workspace and drives the `/aidlc` skill instead of the v1 monolith prompt.
+    # Path to the claude .claude/ distribution directory (e.g. dist/claude/.claude).
+    # When set, the claude adapter copies it into the workspace and drives the
+    # `/aidlc` skill instead of the v1 monolith prompt.
     claude_dist_path: Path | None = None
-    # Scope passed to the `/aidlc` skill (e.g. "mvp", "poc", "feature").
-    # Controls how many of the 32 stages run. Default "mvp" for parity with
-    # the kiro inception+construction coverage.
-    claude_scope: str = "mvp"
+    # Scope passed to the `/aidlc` skill (e.g. "mvp", "poc", "feature"), shared by
+    # both the claude-code and kiro-cli adapters (the two harnesses now share one
+    # `/aidlc` contract). Controls how many of the 32 stages run.
+    scope: str = "mvp"
     # When True, pass `--test-run` so the engine auto-approves gates and the
-    # workflow runs fully autonomously.
-    claude_test_run: bool = True
+    # workflow runs fully autonomously. Shared by both adapters.
+    test_run: bool = True
 
 
 @dataclass

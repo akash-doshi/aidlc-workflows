@@ -31,13 +31,19 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import re
 import shutil
 import sys
 import time
 from pathlib import Path
 
 from cli_harness.adapter import AdapterConfig, AdapterResult, CLIAdapter
+from cli_harness.adapters._aidlc_state import (
+    find_aidlc_docs,
+    has_generated_code,
+    state_status_completed,
+    vision_intent,
+    workflow_not_done,
+)
 from cli_harness.human_analog import generate_human_response
 from cli_harness.normalizer import normalize_output
 from cli_harness.prompt_template import render_prompt, render_v2_prompt
@@ -46,71 +52,9 @@ logger = logging.getLogger(__name__)
 
 _CLAUDE_CLI = "claude"
 
-# claude-code stores workflow state in a markdown file aidlc-docs/aidlc-state.md.
-# Completion is signalled by the "Status" field set to "Completed". The field
-# format mirrors the framework's own getField regex in tools/aidlc-lib.ts.
-_STATE_STATUS_RE = re.compile(r"^- \*\*Status\*\*:[ \t]*Completed\s*$", re.MULTILINE)
-_STATE_FIELD_RE_TEMPLATE = r"^- \*\*{field}\*\*:[ \t]*(.*)$"
-
 
 def _log(msg: str) -> None:
     print(f"  [claude-code] {msg}", file=sys.stderr, flush=True)
-
-
-def _state_status_completed(workspace: Path) -> bool:
-    """Return True if aidlc-docs/aidlc-state.md shows Status: Completed."""
-    for state_file in workspace.rglob("aidlc-state.md"):
-        try:
-            content = state_file.read_text(encoding="utf-8")
-        except OSError:
-            continue
-        if _STATE_STATUS_RE.search(content):
-            return True
-    return False
-
-
-def _read_state_field(workspace: Path, field: str) -> str | None:
-    """Read a single field value from aidlc-docs/aidlc-state.md, or None."""
-    pattern = re.compile(_STATE_FIELD_RE_TEMPLATE.format(field=re.escape(field)), re.MULTILINE)
-    for state_file in workspace.rglob("aidlc-state.md"):
-        try:
-            content = state_file.read_text(encoding="utf-8")
-        except OSError:
-            continue
-        m = pattern.search(content)
-        if m:
-            return m.group(1).strip()
-    return None
-
-
-def _vision_intent(vision_content: str) -> str:
-    """Derive a one-line intent for the /aidlc invocation from the vision doc.
-
-    Uses the first markdown H1 title if present, else the first non-empty line.
-    The full vision.md is read by the agent separately — this is just the
-    scope-detection seed passed to /aidlc.
-    """
-    for line in vision_content.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("# "):
-            return stripped[2:].strip()
-    for line in vision_content.splitlines():
-        if line.strip():
-            return line.strip()
-    return "Build the project described in vision.md"
-
-
-def _find_aidlc_docs(workspace: Path) -> Path | None:
-    """Find aidlc-docs/ under the workspace (claude-code writes it at the root)."""
-    direct = workspace / "aidlc-docs"
-    if direct.is_dir() and any(direct.rglob("*.md")):
-        return direct
-    for child in sorted(workspace.iterdir()):
-        if child.is_dir() and not child.name.startswith("."):
-            candidate = child / "aidlc-docs"
-            if candidate.is_dir() and any(candidate.rglob("*.md")):
-                return candidate
-    return None
 
 
 class ClaudeCodeAdapter(CLIAdapter):
@@ -158,16 +102,12 @@ class ClaudeCodeAdapter(CLIAdapter):
         return asyncio.run(self._run_async(config))
 
     def _is_workflow_complete(self, workspace: Path) -> bool:
-        """True only when aidlc-state.md shows Status: Completed AND code exists."""
-        if not _state_status_completed(workspace):
-            return False
-        # Require at least some generated source code
-        src_files = sum(
-            1
-            for f in workspace.rglob("*.py")
-            if not any(skip in str(f) for skip in (".venv", "__pycache__", ".cache", ".claude"))
-        )
-        return src_files > 0
+        """True only when aidlc-state.md shows Status: Completed AND code exists.
+
+        The generated-code check is language-agnostic (any first-party source
+        file), so non-Python scopes are detected correctly.
+        """
+        return state_status_completed(workspace) and has_generated_code(workspace)
 
     async def _run_async(self, config: AdapterConfig) -> AdapterResult:
         from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
@@ -214,13 +154,11 @@ class ClaudeCodeAdapter(CLIAdapter):
 
                 # Derive a one-line intent from the vision title for the /aidlc invocation.
                 vision_content = config.vision_path.read_text(encoding="utf-8")
-                intent = _vision_intent(vision_content)
+                intent = vision_intent(vision_content)
                 initial_prompt = config.prompt_template or render_v2_prompt(
-                    intent, scope=config.claude_scope, test_run=config.claude_test_run
+                    intent, scope=config.scope, test_run=config.test_run
                 )
-                _log(
-                    f"Using /aidlc skill (scope={config.claude_scope}, test_run={config.claude_test_run})"  # noqa: E501
-                )
+                _log(f"Using /aidlc skill (scope={config.scope}, test_run={config.test_run})")
             else:
                 rules_dir = workspace / "aidlc-rules"
                 rules_dir.mkdir(parents=True, exist_ok=True)
@@ -398,19 +336,13 @@ class ClaudeCodeAdapter(CLIAdapter):
 
                         # 4. State incomplete but agent didn't ask — nudge to continue.
                         # Read the markdown state fields rather than a JSON stages array.
-                        next_stage = _read_state_field(workspace, "Next Stage")
-                        in_progress = _read_state_field(workspace, "In Progress")
-                        has_state = next_stage is not None or in_progress is not None
-                        not_done = (next_stage or "").lower() not in ("", "none") or (
-                            in_progress or ""
-                        ).lower() not in ("", "none")
-                        if has_state and not_done:
-                            detail = next_stage or in_progress or "the next stage"
+                        pending, detail = workflow_not_done(workspace)
+                        if pending:
                             nudge = (
                                 f"Continue the /aidlc workflow. The workflow is not yet complete "
                                 f"(next: {detail}). Run the forwarding loop until the engine reports done."  # noqa: E501
                             )
-                            _log(f"Nudging: next={next_stage!r} in_progress={in_progress!r}")
+                            _log(f"Nudging: next stage = {detail!r}")
                             current_prompt = nudge
                             continue
 
@@ -427,7 +359,7 @@ class ClaudeCodeAdapter(CLIAdapter):
                 _log(f"  {item.name}/" if item.is_dir() else f"  {item.name}")
 
             # Locate and extract aidlc-docs
-            src_docs = _find_aidlc_docs(workspace)
+            src_docs = find_aidlc_docs(workspace)
             dst_docs = config.output_dir / "aidlc-docs"
             if src_docs is not None:
                 if dst_docs.exists():

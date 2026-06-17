@@ -173,23 +173,23 @@ Drives the AIDLC workflow through external CLI tools or SDKs. After execution, n
 
 #### kiro-cli Adapter
 
-Runs `kiro-cli chat --no-interactive --trust-all-tools` in a subprocess. Supports two execution modes:
+Runs `kiro-cli chat --no-interactive --trust-all-tools` in a subprocess. **Requires `bun`** on PATH — the Kiro framework's tools and hooks run via `bun .kiro/tools/*.ts`. Supports two execution modes:
 
 **V1 mode** (no `--kiro-dist`): Concatenates all AIDLC rules markdown files into `.kiro/steering/aidlc-rules.md`. Sends a monolithic `EXECUTOR_SYSTEM_PROMPT`. Detects completion via `aidlc-docs/` quiescence.
 
-**V2 mode** (`--kiro-dist <path>`): Copies the built kiro distribution (`.kiro/` tree with agents, skills, stages, hooks) into the workspace. Sends `/skill aidlc-orchestration\n<vision>` as the initial prompt. Detects completion via `state.json` with all stages at terminal status and construction-phase artifacts present.
+**V2 mode** (`--kiro-dist <path>`, auto-detected at `dist/kiro/.kiro`): Copies the built kiro distribution (`.kiro/` tree with agents, skills, stages, hooks, tools) into the workspace. The Kiro and Claude harnesses now share one `/aidlc` contract, so the adapter sends `/aidlc <intent> --scope <scope> --test-run` and detects completion the same way as claude-code — via markdown `aidlc-docs/aidlc-state.md` showing `- **Status**: Completed` plus generated source. Kiro reads Bedrock region/credentials from the host environment (no shipped settings); the adapter forwards `AWS_REGION` into the subprocess env. Scope (`--scope`, default `mvp`) and `--test-run` are shared with claude-code.
 
-**Multi-turn resume loop:** After each SDK session expires (kiro-cli is stateless), the adapter:
+**Multi-turn resume loop:** After each session expires (kiro-cli is stateless), the adapter:
 
-1. Checks `state.json` — if all stages complete and code exists, done
-2. If the agent's last turn contained waiting signals ("What do you think?", "awaiting approval"), calls the **Human Analog** (Bedrock Simulator) to generate a response and resumes
-3. If stages remain incomplete, sends a nudge prompt listing the pending stages
+1. Checks `aidlc-docs/aidlc-state.md` — if `Status: Completed` and generated code exists, done
+2. If state shows a pending `Next Stage`/`In Progress`, sends a nudge to continue the forwarding loop
+3. Otherwise calls the **Human Analog** (Bedrock Simulator) to generate a response and resumes
 
 #### claude-code Adapter
 
 Uses the `claude-agent-sdk` Python package for fully programmatic execution. No subprocess management. **Requires `bun`** on PATH — the claude-code framework's tools and hooks run via `bun .claude/tools/*.ts`.
 
-**V2 mode** (`--claude-dist <path>`, auto-detected at `claude-code/dist/claude/.claude`): Copies the claude-code distribution (`.claude/` tree) into the workspace, writes a `settings.local.json` overriding `AWS_REGION` to the run's region, and drives the `/aidlc <intent> --scope <scope> --test-run` skill. The skill runs its own self-directed forwarding loop over the 32-stage workflow. Scope (`--claude-scope`, default `mvp`) controls how many stages run. Uses `ClaudeSDKClient` for multi-turn sessions.
+**V2 mode** (`--claude-dist <path>`, auto-detected at `dist/claude/.claude`): Copies the claude distribution (`.claude/` tree) into the workspace, writes a `settings.local.json` overriding `AWS_REGION` to the run's region, and drives the `/aidlc <intent> --scope <scope> --test-run` skill. The skill runs its own self-directed forwarding loop over the 32-stage workflow. Scope (`--scope`, default `mvp`) controls how many stages run. Uses `ClaudeSDKClient` for multi-turn sessions.
 
 **AskUserQuestion interception:** The `can_use_tool` callback intercepts every `AskUserQuestion` tool call, routes it to the Bedrock Human Analog, and injects the answer back as structured `answers` — all within the running SDK session. Under `--test-run` (the default) the engine auto-approves gates, so this rarely fires.
 

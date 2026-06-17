@@ -209,11 +209,10 @@ def main() -> None:
         type=Path,
         default=None,
         help=(
-            "Path to the .kiro/ distribution directory for v2 agentic execution "
-            "(e.g. dist/kiro-ide/.kiro). When set, the kiro adapter copies this into "
-            "the workspace so Kiro picks up skills, agents, hooks, and protocols "
-            "natively and invokes /skill aidlc-orchestrator. "
-            "Defaults to dist/kiro-ide/.kiro relative to the repo root if it exists."
+            "Path to the .kiro/ distribution directory (e.g. dist/kiro/.kiro). When "
+            "set, the kiro adapter copies it into the workspace so Kiro picks up the "
+            "/aidlc skill, agents, hooks, and tools natively and drives the forwarding "
+            "loop. Defaults to dist/kiro/.kiro relative to the repo root. Requires bun."
         ),
     )
     parser.add_argument(
@@ -229,12 +228,13 @@ def main() -> None:
         ),
     )
     parser.add_argument(
-        "--claude-scope",
+        "--scope",
         default="mvp",
-        help="Scope for the /aidlc skill (e.g. mvp, poc, feature). Default: mvp",
+        help="Scope for the /aidlc skill (e.g. mvp, poc, feature). Shared by both "
+        "the claude-code and kiro-cli adapters. Default: mvp",
     )
     parser.add_argument(
-        "--claude-no-test-run",
+        "--no-test-run",
         action="store_true",
         help="Disable --test-run; gates surface to the human simulator instead of auto-approving.",
     )
@@ -336,14 +336,17 @@ def main() -> None:
     if args.kiro_dist:
         kiro_dist_path = Path(args.kiro_dist).resolve()
     else:
-        candidate = git_root / "dist" / "kiro-ide" / ".kiro"
+        candidate = git_root / "dist" / "kiro" / ".kiro"
         if candidate.is_dir():
             kiro_dist_path = candidate
 
     if kiro_dist_path:
-        print(f"  Kiro v2 distribution: {kiro_dist_path}")
+        print(
+            f"  Kiro distribution: {kiro_dist_path} "
+            f"(scope={args.scope}, test_run={not args.no_test_run})"
+        )
     else:
-        print("  Kiro v2 distribution: not found — using v1 steering-file mode")
+        print("  Kiro distribution: not found — using v1 steering-file mode")
 
     # Resolve claude_dist_path — explicit arg, then auto-detect from git root.
     claude_dist_path: Path | None = None
@@ -357,7 +360,7 @@ def main() -> None:
     if claude_dist_path:
         print(
             f"  Claude Code distribution: {claude_dist_path} "
-            f"(scope={args.claude_scope}, test_run={not args.claude_no_test_run})"
+            f"(scope={args.scope}, test_run={not args.no_test_run})"
         )
     else:
         print("  Claude Code distribution: not found — using v1 monolith prompt")
@@ -380,8 +383,8 @@ def main() -> None:
         rules_repo=rules_repo,
         kiro_dist_path=kiro_dist_path,
         claude_dist_path=claude_dist_path,
-        claude_scope=args.claude_scope,
-        claude_test_run=not args.claude_no_test_run,
+        scope=args.scope,
+        test_run=not args.no_test_run,
     )
 
     if not result.success:
