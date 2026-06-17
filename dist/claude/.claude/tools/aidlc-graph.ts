@@ -259,6 +259,8 @@ const FIELD_ORDER = [
   "requires_stage",
   "sensors",
   "scopes",
+  "reviewer",
+  "reviewer_max_iterations",
   "inputs",
   "outputs",
   "rules_in_context",
@@ -1214,6 +1216,17 @@ function buildGraphStage(
   }
   if (parsed.scopes !== undefined) {
     stage.scopes = parsed.scopes;
+  }
+  if (parsed.reviewer !== undefined) {
+    stage.reviewer = parsed.reviewer;
+    // Default the cap to 2 when a reviewer is declared but no explicit cap is
+    // set. Coerce to a number — YAML frontmatter may parse the value as a
+    // string ("2"), but the directive contract and the conductor's
+    // `iterations < max` comparison require a number.
+    stage.reviewer_max_iterations =
+      parsed.reviewer_max_iterations !== undefined
+        ? Number(parsed.reviewer_max_iterations)
+        : 2;
   }
   return stage;
 }

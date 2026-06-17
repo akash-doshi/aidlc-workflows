@@ -34,6 +34,12 @@ export interface StageFrontmatter {
   // treated identically) so a fixture stage with no membership still
   // validates. `aidlc-graph compile` reads this to emit the compiled grid.
   scopes?: string[];
+  // reviewer — agent slug to invoke as a quality gate after the stage body
+  // (stage-protocol.md §12a). Optional; absent when the stage has no review step.
+  reviewer?: string;
+  // reviewer_max_iterations — review-cycle cap before escalating to the human.
+  // Defaults to 2 when reviewer is present.
+  reviewer_max_iterations?: number;
   inputs: string;
   outputs: string;
 }

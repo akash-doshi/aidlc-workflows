@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.12] - 2026-06-17
+
+Fixes a bug where the **reviewer step never ran**: stages declare a `reviewer:` in their frontmatter, but the graph compiler dropped the field, so the compiled `stage-graph.json` and the `run-stage` directive never carried it. The conductor correctly treats the directive as authoritative (stage-protocol.md §12a — invoke a reviewer only when the directive includes one), so with the field missing it always skipped the review. The compiler now carries `reviewer` and `reviewer_max_iterations` through to the compiled graph (and coerces the iteration cap to a number). Re-copy your `dist/<harness>/` to pick it up; reviewer-bearing stages (requirements-analysis, user-stories, application-design, code-generation, and others) now run their review loop before the approval gate.
+
+* **Reviewer now fires on stages that declare one.** No surface change — the fix is in the graph compile; `reviewer` + `reviewer_max_iterations` (default 2) now appear on the relevant `stage-graph.json` nodes and in the `run-stage` directive.
+* No new commands or flags; no breaking change for CI or scripts.
+
 ## [0.7.11] - 2026-06-17
 
 Adds a dedicated **Kiro IDE** harness (`dist/kiro-ide/`) so AI-DLC's hooks fire inside the Kiro IDE, where the agent-JSON `hooks` block the Kiro CLI relies on is ignored. The IDE recognises only `.kiro.hook` files, so the new harness ships those (each routing through the shared `aidlc-kiro-adapter.ts`) alongside an `aidlc.json` that drops the dead `hooks` block. Both Kiro distributions are now supported — `dist/kiro/` (CLI, agent-JSON hooks) and `dist/kiro-ide/` (IDE, `.kiro.hook` files). Run AI-DLC on Kiro with **Claude Opus 4.8** (requires a paid Kiro plan): weaker models skip optional stage steps (reviewer pass, learnings ritual) and rush approval gates. Re-copy `dist/kiro-ide/.kiro/` (+ `dist/kiro-ide/AGENTS.md`) or `dist/kiro/.kiro/` (+ `dist/kiro/AGENTS.md`) into your project to install.

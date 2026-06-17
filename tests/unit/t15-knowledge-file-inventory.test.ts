@@ -58,6 +58,7 @@ const KNOWLEDGE_DIR = join(AIDLC_SRC, "knowledge");
 // (.sh L10), each paired with the exact .md count the .sh asserted (.sh L29-39).
 const AGENT_COUNTS: ReadonlyArray<readonly [string, number]> = [
   ["aidlc-architect-agent", 6],
+  ["aidlc-architecture-reviewer-agent", 1],
   ["aidlc-aws-platform-agent", 4],
   ["aidlc-compliance-agent", 1],
   ["aidlc-delivery-agent", 3],
@@ -67,6 +68,7 @@ const AGENT_COUNTS: ReadonlyArray<readonly [string, number]> = [
   ["aidlc-operations-agent", 4],
   ["aidlc-pipeline-deploy-agent", 3],
   ["aidlc-product-agent", 7],
+  ["aidlc-product-lead-agent", 1],
   ["aidlc-quality-agent", 4],
 ];
 
@@ -99,7 +101,7 @@ function findMd(dir: string): string[] {
 
 describe("t15 — knowledge-file inventory + non-emptiness (mechanism: none)", () => {
   // .sh Part 1 (L16-23): each of the 11 agent dirs has at least one .md file.
-  test("each of the 11 agent knowledge dirs has at least one .md file [.sh L20-23]", () => {
+  test("each of the 13 agent knowledge dirs has at least one .md file [.sh L20-23]", () => {
     for (const [agent] of AGENT_COUNTS) {
       const dir = join(KNOWLEDGE_DIR, agent);
       expect(existsSync(dir)).toBe(true);
@@ -118,7 +120,7 @@ describe("t15 — knowledge-file inventory + non-emptiness (mechanism: none)", (
 
   // STRENGTHENING: knowledge/ holds EXACTLY the 11 expected agent dirs plus
   // aidlc-shared/ — no extra agent dir. The .sh's fixed loop never pinned this.
-  test("knowledge/ holds EXACTLY the 11 agent dirs + aidlc-shared/ [.sh L10 — membership strengthening]", () => {
+  test("knowledge/ holds EXACTLY the 13 agent dirs + aidlc-shared/ [.sh L10 — membership strengthening]", () => {
     const dirs = readdirSync(KNOWLEDGE_DIR, { withFileTypes: true })
       .filter((e) => e.isDirectory())
       .map((e) => e.name)
@@ -151,10 +153,10 @@ describe("t15 — knowledge-file inventory + non-emptiness (mechanism: none)", (
   // .sh L11-14: dynamic TAP plan = 11 + 11 + 7 + TOTAL_FILES. Re-derive that
   // arithmetic from the live tree so the migrated suite cannot silently shrink
   // the surface: pin the total .md count at 56 and the summed plan at 85.
-  test("TAP-plan parity: 11 + 11 + 7 + TOTAL == 85 with TOTAL == 56 [.sh L11-14]", () => {
+  test("TAP-plan parity: 13 + 13 + 7 + TOTAL == 91 with TOTAL == 58 [.sh L11-14]", () => {
     const total = findMd(KNOWLEDGE_DIR).length;
-    expect(total).toBe(56);
-    const plan = 11 + 11 + 7 + total;
-    expect(plan).toBe(85);
+    expect(total).toBe(58);
+    const plan = 13 + 13 + 7 + total;
+    expect(plan).toBe(91);
   });
 });
