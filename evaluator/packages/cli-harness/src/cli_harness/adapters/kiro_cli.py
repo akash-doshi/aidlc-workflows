@@ -35,6 +35,7 @@ import os
 import re
 import select
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -89,6 +90,22 @@ def _strip_ansi(text: str) -> str:
 def _log(msg: str) -> None:
     """Print a progress message to stderr."""
     print(f"  [kiro-cli] {msg}", file=sys.stderr, flush=True)
+
+
+def _kill_process_group(process: subprocess.Popen) -> None:
+    """Kill the process and its whole group (subagent grandchildren included).
+
+    The turn runs in its own session (start_new_session=True), so a kill of the
+    group reaps any subagent children that would otherwise keep the stdout pipe
+    open. Falls back to a plain kill if the group signal is unavailable.
+    """
+    try:
+        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+    except (ProcessLookupError, PermissionError, OSError):
+        try:
+            process.kill()
+        except OSError:
+            pass
 
 
 def _patch_trusted_agents(kiro_dir: Path) -> None:
@@ -264,6 +281,10 @@ class KiroCLIAdapter(CLIAdapter):
                         text=True,
                         bufsize=1,
                         env=child_env,
+                        # Own process group so a hung turn can be killed along with
+                        # any subagent grandchildren (which otherwise hold the
+                        # stdout pipe open and block the drain read).
+                        start_new_session=True,
                     )
 
                     # Read stdout with a per-turn IDLE guard: a blocking
@@ -298,29 +319,32 @@ class KiroCLIAdapter(CLIAdapter):
                                 f"Turn {turn} produced no output for "
                                 f"{_TURN_IDLE_TIMEOUT_S}s — treating as hung, killing"
                             )
-                            process.kill()
+                            _kill_process_group(process)
                             turn_hung = True
                             break
                         if now - start_time >= config.timeout_seconds:
-                            process.kill()
+                            _kill_process_group(process)
                             _log(f"Overall timeout reached at turn {turn}")
                             turn_hung = True
                             break
 
-                    # Drain any buffered tail after EOF/exit.
-                    try:
-                        tail = stdout_fd.read()
-                    except (OSError, ValueError):
-                        tail = ""
-                    if tail:
-                        log_file.write(_strip_ansi(tail))
-                        log_file.flush()
-                        turn_output_lines.append(tail)
+                    # Drain the buffered tail ONLY on a clean exit. After a kill the
+                    # read could block on a subagent grandchild still holding the
+                    # pipe, so skip it entirely when the turn was force-killed.
+                    if not turn_hung:
+                        try:
+                            tail = stdout_fd.read()
+                        except (OSError, ValueError):
+                            tail = ""
+                        if tail:
+                            log_file.write(_strip_ansi(tail))
+                            log_file.flush()
+                            turn_output_lines.append(tail)
 
                     try:
                         process.wait(timeout=10)
                     except subprocess.TimeoutExpired:
-                        process.kill()
+                        _kill_process_group(process)
                     total_rc = process.returncode if process.returncode is not None else -1
                     turn_output = "".join(turn_output_lines)
                     _log(f"Turn {turn} exited with code {total_rc}")
