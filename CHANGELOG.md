@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.11] - 2026-06-17
+
+Adds a dedicated **Kiro IDE** harness (`dist/kiro-ide/`) so AI-DLC's hooks fire inside the Kiro IDE, where the agent-JSON `hooks` block the Kiro CLI relies on is ignored. The IDE recognises only `.kiro.hook` files, so the new harness ships those (each routing through the shared `aidlc-kiro-adapter.ts`) alongside an `aidlc.json` that drops the dead `hooks` block. The existing Kiro CLI build (`dist/kiro/`) still generates from the same source but is not part of the current launch — the IDE distribution is the supported Kiro harness for now. Run AI-DLC on Kiro with **Claude Opus 4.8**: weaker models skip optional stage steps (reviewer pass, learnings ritual) and rush approval gates. Re-copy `dist/kiro-ide/.kiro/` (+ `dist/kiro-ide/AGENTS.md`) into your project to install.
+
+* **New `dist/kiro-ide/` distribution** — copy `dist/kiro-ide/.kiro/` → `<project>/.kiro/` and `dist/kiro-ide/AGENTS.md` → `<project>/AGENTS.md`, then open the project in Kiro IDE. `/aidlc` is the default agent; the framework hooks appear in the Agent Hooks panel.
+* **Approval-gate hardening:** the stage protocol and Kiro orchestrator skills now carry a HARD STOP rule — at an approval gate the conductor ends its turn and waits for the user, and the gate cannot be inferred or auto-approved unless `--test-run` is active.
+* **Adapter robustness:** `aidlc-kiro-adapter.ts` now races the stdin read against a 2s timeout (the IDE may open stdin without writing or closing it) and adds a `session-end` target.
+* **New guide:** `docs/guide/harnesses/kiro-ide.md` (install, the Opus 4.8 requirement, how `.kiro.hook` hooks work, what differs on Kiro IDE). The Kiro CLI chapter is flagged as not part of the current launch.
+* Removed the stale legacy `kiro/dist/kiro-ide/` tree (an older, unrelated prototype) from the repository.
+* No new commands or flags; no breaking change for CI or scripts.
+
 ## [0.7.10] - 2026-06-16
 
 Raises the shipped reasoning-effort default to **xhigh** for the AI-DLC orchestrator on both the Claude Code and Kiro CLI harnesses (the model pin — Opus 4.8 — is unchanged). The orchestrator runs a long forwarding loop where deeper reasoning earns its cost, so xhigh is now the out-of-the-box default rather than high. Codex is unaffected (it ships a different model family by design). Re-copy your `dist/<harness>/` to pick it up; override per session if you prefer a lighter tier.

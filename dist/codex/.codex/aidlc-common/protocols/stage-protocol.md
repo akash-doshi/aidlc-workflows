@@ -28,6 +28,10 @@ Before and during EVERY stage, verify:
 
 Every stage (except the 3 stages in the Initialization phase: workspace-scaffold, workspace-detection, state-init) requires explicit user approval before proceeding.
 
+### HARD STOP RULE (non-negotiable)
+
+When you present an approval gate question, you MUST end your turn immediately and wait for the user's explicit response. Do NOT call any tool until the user has typed their choice in a new message. An approval gate is a mandatory human checkpoint that cannot be inferred, auto-approved, or skipped unless `--test-run` mode is active.
+
 ### Test-Run Mode Override
 
 When TEST_RUN_MODE is active (set by the `--test-run` flag in SKILL.md):

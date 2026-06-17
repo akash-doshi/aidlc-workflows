@@ -1,0 +1,63 @@
+// harness/kiro-ide/manifest.ts — the Kiro IDE distribution row.
+//
+// Identical to the Kiro CLI harness (harness/kiro/) EXCEPT:
+//   - Ships .kiro.hook files for hook registration (IDE ignores agent JSON hooks)
+//   - The aidlc.json agent config omits the `hooks` field (dead weight in IDE)
+//
+// The CLI harness relies on agent JSON hooks (the `hooks` object inside
+// aidlc.json); the IDE harness relies on .kiro.hook files (the only mechanism
+// the IDE recognises). Both share the same core, adapter, and TS hook bodies.
+
+import type { HarnessManifest } from "../../scripts/manifest-types.ts";
+import onboardingFills from "./onboarding.fills.ts";
+
+const manifest: HarnessManifest = {
+  name: "kiro-ide",
+  harnessDir: ".kiro",
+
+  // Same core projection as kiro CLI.
+  coreDirs: [
+    { src: "tools", dst: "tools" },
+    { src: "aidlc-common", dst: "aidlc-common" },
+    { src: "knowledge", dst: "knowledge" },
+    { src: "rules", dst: "steering" },
+    { src: "sensors", dst: "sensors" },
+    { src: "scopes", dst: "scopes" },
+    { src: "agents", dst: "agents" },
+    { src: "hooks", dst: "hooks" },
+    { src: "skills/aidlc-session-cost", dst: "skills/aidlc-session-cost" },
+    { src: "skills/aidlc-replay", dst: "skills/aidlc-replay" },
+    { src: "skills/aidlc-outcomes-pack", dst: "skills/aidlc-outcomes-pack" },
+  ],
+
+  // Authored surfaces: same as CLI but adds .kiro.hook files and omits the
+  // hooks field from aidlc.json.
+  harnessFiles: [
+    { src: "skills/aidlc/SKILL.md", dst: "skills/aidlc/SKILL.md" },
+    { src: "skills/aidlc/question-rendering.md", dst: "skills/aidlc/question-rendering.md" },
+    { src: "agents/aidlc.json", dst: "agents/aidlc.json" },
+    { src: "agents/aidlc-architect-agent.json", dst: "agents/aidlc-architect-agent.json" },
+    { src: "agents/aidlc-developer-agent.json", dst: "agents/aidlc-developer-agent.json" },
+    { src: "agents/aidlc-product-lead-agent.json", dst: "agents/aidlc-product-lead-agent.json" },
+    { src: "agents/aidlc-architecture-reviewer-agent.json", dst: "agents/aidlc-architecture-reviewer-agent.json" },
+    { src: "hooks/aidlc-kiro-adapter.ts", dst: "hooks/aidlc-kiro-adapter.ts" },
+    { src: "hooks/aidlc-audit-logger.kiro.hook", dst: "hooks/aidlc-audit-logger.kiro.hook" },
+    { src: "hooks/aidlc-log-subagent.kiro.hook", dst: "hooks/aidlc-log-subagent.kiro.hook" },
+    { src: "hooks/aidlc-runtime-compile.kiro.hook", dst: "hooks/aidlc-runtime-compile.kiro.hook" },
+    { src: "hooks/aidlc-session-end.kiro.hook", dst: "hooks/aidlc-session-end.kiro.hook" },
+    { src: "hooks/aidlc-session-start.kiro.hook", dst: "hooks/aidlc-session-start.kiro.hook" },
+    { src: "hooks/aidlc-stop.kiro.hook", dst: "hooks/aidlc-stop.kiro.hook" },
+    { src: "hooks/aidlc-sync-statusline.kiro.hook", dst: "hooks/aidlc-sync-statusline.kiro.hook" },
+    { src: "settings/cli.json", dst: "settings/cli.json" },
+  ],
+
+  onboarding: { dst: "AGENTS.md", projectRoot: true, fills: onboardingFills },
+
+  rulesRename: "steering",
+
+  authoredExempt: [/^agents\/[^/]+\.json$/, /^hooks\/aidlc-kiro-[^/]+\.ts$/, /^hooks\/[^/]+\.kiro\.hook$/],
+
+  emit: null,
+};
+
+export default manifest;

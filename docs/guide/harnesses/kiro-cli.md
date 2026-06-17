@@ -1,5 +1,11 @@
 # Running AI-DLC on Kiro CLI
 
+> [!NOTE]
+> The Kiro CLI distribution is **not part of the current launch**. For Kiro,
+> the supported distribution is the IDE-targeted one — see
+> [Running AI-DLC on Kiro IDE](kiro-ide.md). This chapter is retained for the
+> CLI build that still generates from the same source.
+
 One of the framework's harnesses: `dist/kiro/` runs the same AI-DLC
 methodology on [Kiro CLI](https://kiro.dev/docs/cli/). One deterministic core
 — the tools, 32 stage files, protocols, knowledge, sensors, scopes, and rules

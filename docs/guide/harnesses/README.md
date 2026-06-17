@@ -14,8 +14,10 @@ Pick your harness:
 | Harness | Invoke | Chapter |
 |---------|--------|---------|
 | **Claude Code** | `/aidlc` | Covered throughout the [User Guide](../00-introduction.md) (its examples run on Claude Code); install in [Getting Started](../01-getting-started.md). |
-| **Kiro CLI** | `kiro-cli chat --agent aidlc` | [Running AI-DLC on Kiro CLI](kiro-cli.md) — prerequisites, install, what's different on Kiro. |
+| **Kiro IDE** | `/aidlc` | [Running AI-DLC on Kiro IDE](kiro-ide.md) — prerequisites (Opus 4.8), install, hooks, what's different on Kiro. |
 | **Codex CLI** (≥ 0.139.0) | `$aidlc` | [AI-DLC on Codex CLI](codex-cli.md) — prerequisites, trust pre-seed, Bedrock config, the git-repo requirement. |
+
+A Kiro CLI build (`dist/kiro/`) also exists — see [Running AI-DLC on Kiro CLI](kiro-cli.md) — but it is **not part of the current launch**; the IDE-targeted distribution is the supported Kiro harness for now.
 
 This set is open: a new harness gets its own chapter here, added from the same
 template. For *building* a new harness (the source contract — manifest, hook

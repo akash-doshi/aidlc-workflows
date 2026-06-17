@@ -125,4 +125,4 @@ with the neutral chapters:
 - [Scopes, Depth, and Test Strategy](../04-scopes-and-depth.md) — right-sizing a run.
 - [Glossary](../glossary.md) — every term defined.
 
-Other harnesses: [Running AI-DLC on Kiro CLI](kiro-cli.md) · [the harness family index](README.md).
+Other harnesses: [Running AI-DLC on Kiro IDE](kiro-ide.md) · [the harness family index](README.md).
