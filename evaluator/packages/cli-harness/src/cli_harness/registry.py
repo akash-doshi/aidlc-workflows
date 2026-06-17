@@ -8,6 +8,9 @@ from cli_harness.adapter import CLIAdapter
 _ADAPTER_MAP: dict[str, str] = {
     "kiro-cli": "cli_harness.adapters.kiro_cli.KiroCLIAdapter",
     "claude-code": "cli_harness.adapters.claude_code.ClaudeCodeAdapter",
+    # PTY-driven real `claude` CLI (customer terminal fidelity); claude-code is
+    # the in-process SDK fast path.
+    "claude-cli": "cli_harness.adapters.claude_cli.ClaudeCLIAdapter",
 }
 
 

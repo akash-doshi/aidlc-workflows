@@ -166,10 +166,11 @@ Drives the AIDLC workflow through external CLI tools or SDKs. After execution, n
 
 #### Adapter Registry
 
-| Adapter Name  | Class               | Backend                           |
-| ------------- | ------------------- | --------------------------------- |
-| `kiro-cli`    | `KiroCLIAdapter`    | `kiro-cli chat` subprocess        |
-| `claude-code` | `ClaudeCodeAdapter` | `claude-agent-sdk` Python package |
+| Adapter Name  | Class               | Backend                                             |
+| ------------- | ------------------- | --------------------------------------------------- |
+| `kiro-cli`    | `KiroCLIAdapter`    | `kiro-cli chat` subprocess                          |
+| `claude-code` | `ClaudeCodeAdapter` | `claude-agent-sdk` Python package (SDK, fast)       |
+| `claude-cli`  | `ClaudeCLIAdapter`  | real `claude` CLI in a PTY (pexpect+pyte, fidelity) |
 
 #### kiro-cli Adapter
 
@@ -195,10 +196,23 @@ Uses the `claude-agent-sdk` Python package for fully programmatic execution. No 
 
 **Completion detection** (checked after every SDK turn):
 
-1. `aidlc-docs/aidlc-state.md` shows `Status: Completed` AND Python source files exist in workspace → done
+1. `aidlc-docs/aidlc-state.md` shows `Status: Completed` AND generated source exists in the workspace (language-agnostic) → done
 2. SDK returned non-success subtype → stop
 3. Agent output contains waiting signals → call Human Analog, resume with response
 4. `aidlc-state.md` shows an incomplete `Next Stage`/`In Progress` → send nudge prompt, continue loop
+
+#### claude-cli Adapter (terminal fidelity)
+
+The `claude-code` adapter embeds the **in-process SDK** — the "logic half." The `claude-cli` adapter instead drives the **real `claude` CLI in a pseudo-terminal**, reproducing the genuine customer experience the framework's own `tests/e2e` tui-drive tests exercise (the "render half"). Use `claude-code` for fast/cheap programmatic runs; use `claude-cli` to measure the actual terminal UX (permission modals, the AskUserQuestion widget render, the Stop-hook forwarding loop).
+
+It is the Python-native analogue of `tests/harness/tui-drive.ts`, built on a small driver (`adapters/_pty_terminal.py`):
+
+- **pexpect** spawns `claude --dangerously-skip-permissions --setting-sources project` in a real PTY (the customer-grade transport — no SDK embedding, no tmux).
+- **pyte** reconstructs the visible screen grid from the raw ANSI stream, so the adapter can wait on prompts and detect the approval-gate menu (caret + `Enter to select`/`Submit` footer) the way a user sees it.
+- Types `/aidlc <intent> --scope <scope> --test-run` like a customer, clears startup trust/bypass modals idempotently, and answers any visible gate by keystroke (Enter accepts the highlighted default).
+- **Detection is screen-based; termination is on-disk** — it stops only when `aidlc-docs/aidlc-state.md` shows `Status: Completed` plus generated code, never on a screen string. Timeouts are loud hang-backstops.
+
+Requires the `claude` CLI, `bun`, and a POSIX PTY (pexpect) — Windows falls back to the `claude-code` SDK adapter.
 
 ### 4.3 Path C: IDE Harness (`packages/ide-harness`)
 
