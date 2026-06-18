@@ -122,7 +122,10 @@ class ClaudeCLIAdapter(CLIAdapter):
 
             vision_content = config.vision_path.read_text(encoding="utf-8")
             intent = vision_intent(vision_content)
-            aidlc_cmd = render_v2_prompt(intent, scope=config.scope, test_run=config.test_run)
+            has_tech_env = bool(config.tech_env_path and config.tech_env_path.is_file())
+            aidlc_cmd = render_v2_prompt(
+                intent, scope=config.scope, test_run=config.test_run, tech_env=has_tech_env
+            )
             _log(f"/aidlc invocation: {aidlc_cmd!r}")
 
             # Child env: isolate to project settings + carry AWS region/profile/creds.

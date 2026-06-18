@@ -207,11 +207,15 @@ class KiroCLIAdapter(CLIAdapter):
                 # an unanswerable permission prompt (patches the local copy only).
                 _patch_trusted_agents(kiro_dest)
 
-                # /aidlc <one-line intent> --scope <scope> --test-run
+                # /aidlc <intent + spec pins> --scope <scope> --test-run
                 vision_content = config.vision_path.read_text(encoding="utf-8")
                 intent = vision_intent(vision_content)
+                has_tech_env = bool(config.tech_env_path and config.tech_env_path.is_file())
                 prompt = config.prompt_template or render_v2_prompt(
-                    intent, scope=config.scope, test_run=config.test_run
+                    intent,
+                    scope=config.scope,
+                    test_run=config.test_run,
+                    tech_env=has_tech_env,
                 )
                 _log(f"Using /aidlc skill (scope={config.scope}, test_run={config.test_run})")
             else:

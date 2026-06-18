@@ -111,25 +111,50 @@ not needed, but always continue to the next stage.
 
 
 # The /aidlc skill is invoked as a clean slash command so Claude Code parses
-# $ARGUMENTS correctly (description + flags). The skill's own SKILL.md already
-# instructs the agent to read vision.md/tech-env.md and run the forwarding loop
-# to completion, so no prose preamble is needed — it would only risk the slash
-# command not being recognized as the leading token.
-V2_ORCHESTRATOR_PROMPT = "/aidlc {intent} --scope {scope}{test_run_flag}"
+# $ARGUMENTS correctly: the engine treats everything before the flags as the
+# freeform intent and parses `--scope`/`--test-run` itself (see the orchestrator
+# SKILL.md — "$ARGUMENTS … freeform text … the engine parses flags").
+#
+# The intent is the ONLY channel that reaches the executor — the orchestrator
+# SKILL.md does NOT instruct the agent to read vision.md/tech-env.md, and no
+# stage ingests an authored tech-constraint doc on greenfield. So under
+# `--test-run` (no human to answer the stack/scope questions) the workflow would
+# otherwise invent both. We therefore PIN the specs in the intent itself:
+# point the executor at vision.md for the full scope and at tech-env.md as a
+# hard, non-substitutable stack constraint. Kept single-line so it submits as
+# one slash command in the PTY/chat transport.
+_PIN_SCOPE_CLAUSE = (
+    " Build the COMPLETE functionality specified in vision.md — every feature and "
+    "endpoint it describes; do not reduce it to a smaller subset."
+)
+_PIN_TECH_ENV_CLAUSE = (
+    " tech-env.md defines the required technical environment (language, framework, "
+    "package manager, project structure, and tooling) and is a HARD CONSTRAINT: use "
+    "exactly that stack; do not substitute alternatives."
+)
+V2_ORCHESTRATOR_PROMPT = "/aidlc {intent}{pins} --scope {scope}{test_run_flag}"
 
 
-def render_v2_prompt(intent: str, scope: str = "mvp", test_run: bool = True) -> str:
+def render_v2_prompt(
+    intent: str, scope: str = "mvp", test_run: bool = True, tech_env: bool = False
+) -> str:
     """Render the prompt that drives the `/aidlc` skill (claude-cli and kiro-cli).
 
     Args:
-        intent: The development intent — a one-line summary of what to build.
+        intent: The development intent — a one-line summary of what to build
+            (typically the vision's H1 title), used as the freeform seed.
         scope: The `/aidlc` scope (e.g. "mvp", "poc", "feature"). Controls how
             many of the 32 stages run.
         test_run: When True, append `--test-run` so the engine auto-approves
             gates and the workflow runs fully autonomously.
+        tech_env: When True, a `tech-env.md` was supplied to the workspace — pin
+            it in the intent as a hard stack constraint so the executor honors it
+            instead of inventing a stack at the nfr-requirements question.
     """
+    pins = _PIN_SCOPE_CLAUSE + (_PIN_TECH_ENV_CLAUSE if tech_env else "")
     return V2_ORCHESTRATOR_PROMPT.format(
         intent=intent.strip(),
+        pins=pins,
         scope=scope,
         test_run_flag=" --test-run" if test_run else "",
     )
