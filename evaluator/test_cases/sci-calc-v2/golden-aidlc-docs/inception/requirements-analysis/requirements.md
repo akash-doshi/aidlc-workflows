@@ -1,171 +1,81 @@
-# Requirements — Scientific Calculator API
-
-## Intent Summary
-
-| Attribute | Value |
-|-----------|-------|
-| **Type** | New feature (greenfield) |
-| **Scope** | Single component |
-| **Complexity** | Medium |
-| **Classification** | Greenfield — no existing codebase |
-| **Affected Repos** | None (new project) |
-
----
+# Requirements
 
 ## Functional Requirements
 
-### Arithmetic Operations
+### FR-01: Arithmetic Operations
+The API SHALL provide POST /api/v1/arithmetic/{operation} endpoints for: add, subtract, multiply, divide, modulo (accepting `{"a": N, "b": N}`) and abs, negate (accepting `{"a": N}`).
 
-**FR-1:** The API SHALL expose `POST /api/v1/arithmetic/{operation}` for operations: `add`, `subtract`, `multiply`, `divide`, `modulo`, `abs`, `negate`.
+**Pass/fail**: Each operation returns correct result in the success envelope.
 
-**FR-2:** Binary arithmetic operations (`add`, `subtract`, `multiply`, `divide`, `modulo`) SHALL accept a JSON body `{"a": N, "b": N}` where N is a finite number.
+### FR-02: Powers and Roots Operations
+The API SHALL provide POST /api/v1/powers/{operation} endpoints for: power (`{"base": N, "exponent": N}`), sqrt/cbrt/square (`{"a": N}`), nth_root (`{"a": N, "n": int}`).
 
-**FR-3:** Unary arithmetic operations (`abs`, `negate`) SHALL accept a JSON body `{"a": N}` where N is a finite number.
+**Pass/fail**: Correct results; DOMAIN_ERROR for sqrt(negative) and nth_root(negative, even).
 
-**FR-4:** Division by zero (`divide` or `modulo` with `b = 0`) SHALL return error code `DIVISION_BY_ZERO` with HTTP 400.
+### FR-03: Trigonometry Operations
+The API SHALL provide POST /api/v1/trigonometry/{operation} for 14 trig functions accepting `{"a": N, "angle_unit": "radians"|"degrees"}` (default radians). atan2 accepts `{"y": N, "x": N, "angle_unit": ...}`.
 
-### Powers and Roots
+**Pass/fail**: Correct results; DOMAIN_ERROR for asin/acos outside [-1,1], acosh < 1, atanh outside (-1,1).
 
-**FR-5:** The API SHALL expose `POST /api/v1/powers/{operation}` for operations: `power`, `sqrt`, `cbrt`, `nth_root`, `square`.
+### FR-04: Logarithmic Operations
+The API SHALL provide POST /api/v1/logarithmic/{operation} for: ln, log10, log2 (`{"a": N}`), log (`{"a": N, "base": N}`), exp (`{"a": N}`).
 
-**FR-6:** `power` SHALL accept `{"base": N, "exponent": N}` and return `base ** exponent`.
+**Pass/fail**: Correct results; DOMAIN_ERROR for a <= 0, base <= 0, base = 1.
 
-**FR-7:** `sqrt`, `cbrt`, `square` SHALL accept `{"a": N}`.
+### FR-05: Statistics Operations
+The API SHALL provide POST /api/v1/statistics/{operation} for: mean, median, mode, stdev, variance, pstdev, pvariance, min, max, sum, count (accepting `{"values": [N, ...]}`).
 
-**FR-8:** `nth_root` SHALL accept `{"a": N, "n": int}` and return the nth root of a.
+**Pass/fail**: Correct results; INVALID_INPUT for empty arrays; stdev/variance require >= 2 elements; mode returns smallest on ties.
 
-**FR-9:** `sqrt` SHALL return `DOMAIN_ERROR` (400) when `a < 0`.
+### FR-06: Constants
+The API SHALL provide GET /api/v1/constants (all as map) and GET /api/v1/constants/{name} for: pi, e, tau, inf, nan, golden_ratio, sqrt2, ln2, ln10.
 
-**FR-10:** `nth_root` SHALL return `DOMAIN_ERROR` (400) when `a < 0` and `n` is even.
+**Pass/fail**: Correct constant values returned in success envelope.
 
-### Trigonometry
+### FR-07: Unit Conversions
+The API SHALL provide POST /api/v1/conversions/{category} for angle (degrees/radians/gradians), temperature (celsius/fahrenheit/kelvin), length (meters/feet/inches/centimeters/millimeters/kilometers/miles/yards), weight (kilograms/pounds/ounces/grams/milligrams/tonnes/stones).
 
-**FR-11:** The API SHALL expose `POST /api/v1/trigonometry/{operation}` for operations: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`.
+**Pass/fail**: Correct conversion results for all unit pairs.
 
-**FR-12:** Standard trig operations SHALL accept `{"a": N, "angle_unit": "radians"|"degrees"}` with `"radians"` as default.
+### FR-08: Health Check
+The API SHALL provide GET /health returning `{"status": "ok", "version": "0.1.0"}`.
 
-**FR-13:** `atan2` SHALL accept `{"y": N, "x": N, "angle_unit": "radians"|"degrees"}` with `"radians"` as default.
+**Pass/fail**: Returns 200 with exact schema.
 
-**FR-14:** `asin` and `acos` SHALL return `DOMAIN_ERROR` (400) when input is outside [-1, 1].
+### FR-09: Structured Error Responses
+The API SHALL return errors in the envelope `{"status": "error", "operation": "...", "inputs": {...}, "error": {"code": "...", "message": "..."}}` with codes: INVALID_INPUT (422), DIVISION_BY_ZERO (400), DOMAIN_ERROR (400), OVERFLOW (400), NOT_FOUND (404).
 
-**FR-15:** `acosh` SHALL return `DOMAIN_ERROR` (400) when `a < 1`.
+**Pass/fail**: All error conditions return correct code and HTTP status.
 
-**FR-16:** `atanh` SHALL return `DOMAIN_ERROR` (400) when `a` is outside (-1, 1).
+### FR-10: Input Validation
+The API SHALL validate all request bodies via Pydantic v2 schemas and return INVALID_INPUT (422) for malformed requests conforming to the error envelope.
 
-### Logarithms
-
-**FR-17:** The API SHALL expose `POST /api/v1/logarithmic/{operation}` for operations: `ln`, `log10`, `log2`, `log`, `exp`.
-
-**FR-18:** `ln`, `log10`, `log2` SHALL accept `{"a": N}` and return `DOMAIN_ERROR` (400) when `a <= 0`.
-
-**FR-19:** `log` SHALL accept `{"a": N, "base": N}` and return `DOMAIN_ERROR` (400) when `a <= 0`, `base <= 0`, or `base = 1`.
-
-**FR-20:** `exp` SHALL accept `{"a": N}` and return `e ** a`. If the result overflows, return `OVERFLOW` (400).
-
-### Statistics
-
-**FR-21:** The API SHALL expose `POST /api/v1/statistics/{operation}` for operations: `mean`, `median`, `mode`, `stdev`, `variance`, `pstdev`, `pvariance`, `min`, `max`, `sum`, `count`.
-
-**FR-22:** All statistics operations SHALL accept `{"values": [N, ...]}`.
-
-**FR-23:** All statistics operations SHALL require at least 1 element. An empty array SHALL return `INVALID_INPUT` (422).
-
-**FR-24:** `stdev` and `variance` SHALL require at least 2 elements. Arrays with fewer than 2 elements SHALL return `INVALID_INPUT` (422).
-
-**FR-25:** `pstdev` and `pvariance` SHALL require at least 1 element.
-
-**FR-26:** `mode` SHALL return the smallest mode when there are ties.
-
-**FR-27:** Statistics operations SHALL use the Python `statistics` module directly and return its exact results.
-
-### Constants
-
-**FR-28:** The API SHALL expose `GET /api/v1/constants/{name}` returning the named constant's value.
-
-**FR-29:** The API SHALL expose `GET /api/v1/constants` returning all constants as a map.
-
-**FR-30:** Supported constants SHALL be: `pi`, `e`, `tau`, `inf`, `nan`, `golden_ratio`, `sqrt2`, `ln2`, `ln10`.
-
-### Unit Conversions
-
-**FR-31:** The API SHALL expose `POST /api/v1/conversions/{category}` accepting `{"value": N, "from_unit": "...", "to_unit": "..."}`.
-
-**FR-32:** Supported categories and units SHALL be:
-- **angle**: degrees, radians, gradians
-- **temperature**: celsius, fahrenheit, kelvin
-- **length**: meters, feet, inches, centimeters, millimeters, kilometers, miles, yards
-- **weight**: kilograms, pounds, ounces, grams, milligrams, tonnes, stones
-
-**FR-33:** An unrecognised unit string within a valid category SHALL return `INVALID_INPUT` (422) with a descriptive message indicating the unrecognised unit.
-
-### Health Check
-
-**FR-34:** The API SHALL expose `GET /health` returning `{"status": "ok", "version": "0.1.0"}`.
-
-### Response Format
-
-**FR-35:** All successful responses SHALL use the envelope: `{"status": "ok", "operation": "<name>", "inputs": {...}, "result": <value>}`.
-
-**FR-36:** All error responses SHALL use the envelope: `{"status": "error", "operation": "<name>", "inputs": {...}, "error": {"code": "<CODE>", "message": "..."}}`.
-
-**FR-37:** The API SHALL support the following error codes with corresponding HTTP statuses:
-- `INVALID_INPUT` → 422
-- `DIVISION_BY_ZERO` → 400
-- `DOMAIN_ERROR` → 400
-- `OVERFLOW` → 400
-- `NOT_FOUND` → 404
-
-### Input Validation
-
-**FR-38:** The API SHALL reject `inf`, `-inf`, and `nan` as input values with `INVALID_INPUT` (422). Only finite numeric values are accepted.
-
-**FR-39:** FastAPI/Pydantic schema validation errors SHALL be intercepted and returned in the structured error envelope format with code `INVALID_INPUT` (422).
-
-### Error Handling
-
-**FR-40:** The API SHALL never return a bare HTTP 500. All math-domain and overflow errors SHALL be caught and translated to the structured error envelope.
-
-**FR-41:** Unexpected exceptions SHALL be logged at ERROR level and return a generic `INTERNAL_ERROR` response in the structured error envelope.
-
----
+**Pass/fail**: Invalid inputs rejected with structured error response.
 
 ## Non-Functional Requirements
 
-**NFR-1:** Response latency (p95) SHALL be less than 50ms for any single operation.
+### NFR-01: Test Coverage
+Line coverage >= 90% as measured by pytest-cov.
 
-**NFR-2:** Test coverage SHALL be >= 90% line coverage.
+### NFR-02: Floating-Point Precision
+Results match Python `math` stdlib to <= 1 ULP for standard operations.
 
-**NFR-3:** Floating-point results for `math`-based operations SHALL match the Python `math` stdlib to <= 1 ULP (unit in the last place).
+### NFR-03: Response Latency
+p95 < 50ms for any single operation.
 
-**NFR-4:** Statistics results SHALL match the Python `statistics` stdlib implementation exactly (use the module directly).
+### NFR-04: Startup Time
+Application starts in < 2 seconds.
 
-**NFR-5:** Application startup time SHALL be less than 2 seconds.
+### NFR-05: Request Size
+Max request body size: 1 MB.
 
-**NFR-6:** Maximum request body size SHALL be limited to 1 MB.
+### NFR-06: Python Version
+Requires Python 3.13.x (enforced via `requires-python = ">=3.13"`).
 
-**NFR-7:** All endpoints SHALL accept and return `application/json` exclusively.
+## Traceability
 
-**NFR-8:** API SHALL be versioned via URL prefix (`/api/v1/...`). Initial release is v0.1.0 following semver.
-
----
-
-## Assumptions
-
-1. **Stateless architecture** — The API has no shared mutable state. Each request is independently processed. No concurrency concerns exist beyond framework defaults (uvicorn's async handling).
-2. **Python stdlib sufficiency** — The Python `math` and `statistics` standard library modules provide sufficient precision and functionality. No third-party math libraries are needed.
-3. **Single deployment unit** — The application is a single FastAPI service. No multi-service orchestration is required.
-4. **Development scope** — This is a development/demonstration API. Production hardening (authentication, rate-limiting, TLS termination) is explicitly excluded.
-5. **IEEE 754 double precision** — All numeric values use Python's native `float` (IEEE 754 double precision). No arbitrary-precision arithmetic is required.
-
----
-
-## Out of Scope
-
-1. Persistent storage or user accounts
-2. Graphical or terminal UI
-3. Symbolic / computer-algebra (CAS) capabilities
-4. Arbitrary-precision or big-number libraries beyond Python's standard `decimal` module
-5. Authentication, rate-limiting, or production hardening
-6. Expression evaluation from string input
-7. Deployment infrastructure (Docker, Kubernetes, CI/CD pipelines)
-8. API documentation hosting (Swagger UI is auto-generated by FastAPI but not a deliverable)
+| Requirement | Source |
+|-------------|--------|
+| FR-01 through FR-10 | vision.md § "Features In Scope (MVP)" and § "API Specification" |
+| NFR-01 through NFR-06 | tech-env.md § "Non-Functional Requirements" |
+| All | intent-statement.md § "Success Metrics" |

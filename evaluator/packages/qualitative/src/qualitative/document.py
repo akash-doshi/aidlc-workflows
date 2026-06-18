@@ -25,10 +25,26 @@ _SKIP_FILES = frozenset(
 # classifying phase so both v1 and v2 layouts produce the same phase labels.
 _INTENT_PREFIX = re.compile(r"^intent-\d{3}-[^/]+/")
 
-# Construction paths include a per-unit name that varies across runs
-# (e.g. "sci-calc", "scientific-calculator-api"). Normalise to a fixed
-# placeholder so documents pair correctly regardless of the unit name chosen.
-_CONSTRUCTION_UNIT = re.compile(r"^(construction/)[^/]+/(.+)$")
+# Construction stage slugs (from core/aidlc-common/stages/construction/). A
+# construction path's second segment is EITHER one of these stages (the run
+# emitted stages directly under construction/, no unit dir) OR a per-unit name
+# that varies across runs ("sci-calc", "unit-1-foundation", …). We collapse the
+# unit dimension to a fixed `_unit_` token so all three shapes pair:
+#   construction/<stage>/<file>            (unit-less single-unit run)
+#   construction/<unit>/<stage>/<file>     (multi-unit run + the golden)
+# both → construction/_unit_/<stage>/<file>
+_CONSTRUCTION_STAGES = frozenset(
+    {
+        "build-and-test",
+        "ci-pipeline",
+        "code-generation",
+        "code",  # legacy golden alias for code-generation
+        "functional-design",
+        "infrastructure-design",
+        "nfr-design",
+        "nfr-requirements",
+    }
+)
 
 
 @dataclass
@@ -45,13 +61,24 @@ def _normalise_path(relative_path: str) -> str:
 
     Applies two transformations:
     1. Strips the leading v2 intent directory (intent-NNN-slug/) if present.
-    2. Replaces the per-unit name in construction paths with a fixed token
-       (construction/<unit>/ → construction/_unit_/) so that runs using
-       different unit names (e.g. "sci-calc" vs "scientific-calculator-api")
-       still pair correctly.
+    2. Collapses the construction per-unit dimension to a fixed `_unit_` token
+       so the three construction layouts all pair:
+         construction/<stage>/<file>          (unit-less single-unit run)
+         construction/<unit>/<stage>/<file>   (multi-unit run + the golden)
+       both become construction/_unit_/<stage>/<file>. The second segment is
+       classified as a stage (insert `_unit_`) or a unit name (replace it) by
+       membership in _CONSTRUCTION_STAGES.
     """
     path = _INTENT_PREFIX.sub("", relative_path)
-    path = _CONSTRUCTION_UNIT.sub(r"\1_unit_/\2", path)
+    parts = path.split("/")
+    if len(parts) >= 3 and parts[0] == "construction":
+        if parts[1] in _CONSTRUCTION_STAGES:
+            # construction/<stage>/... → construction/_unit_/<stage>/...
+            parts = [parts[0], "_unit_", *parts[1:]]
+        else:
+            # construction/<unit>/<stage>/... → construction/_unit_/<stage>/...
+            parts[1] = "_unit_"
+        path = "/".join(parts)
     return path
 
 

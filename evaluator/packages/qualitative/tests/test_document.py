@@ -6,10 +6,51 @@ from pathlib import Path
 
 from qualitative.document import (
     AidlcDocument,
+    _normalise_path,
     classify_phase,
     load_documents,
     pair_documents,
 )
+
+
+class TestNormaliseConstructionUnit:
+    """The construction per-unit dimension must collapse to `_unit_` so the
+    three layouts (unit-less single-unit run, multi-unit run, and the golden's
+    named unit) all pair at the same normalised path."""
+
+    def test_unitless_construction_gets_unit_token(self):
+        # construction/<stage>/<file> → construction/_unit_/<stage>/<file>
+        assert (
+            _normalise_path("construction/code-generation/plan.md")
+            == "construction/_unit_/code-generation/plan.md"
+        )
+
+    def test_named_unit_collapses_to_token(self):
+        assert (
+            _normalise_path("construction/unit-1-foundation/code-generation/plan.md")
+            == "construction/_unit_/code-generation/plan.md"
+        )
+
+    def test_golden_unit_name_collapses_to_token(self):
+        assert (
+            _normalise_path("construction/sci-calc/code-generation/plan.md")
+            == "construction/_unit_/code-generation/plan.md"
+        )
+
+    def test_all_three_layouts_converge(self):
+        forms = [
+            "construction/nfr-design/security-design.md",  # unit-less
+            "construction/unit-2-arithmetic/nfr-design/security-design.md",  # multi-unit
+            "construction/sci-calc/nfr-design/security-design.md",  # golden
+        ]
+        normed = {_normalise_path(f) for f in forms}
+        assert normed == {"construction/_unit_/nfr-design/security-design.md"}
+
+    def test_non_construction_path_untouched(self):
+        assert (
+            _normalise_path("inception/user-stories/stories.md")
+            == "inception/user-stories/stories.md"
+        )
 
 
 class TestClassifyPhase:

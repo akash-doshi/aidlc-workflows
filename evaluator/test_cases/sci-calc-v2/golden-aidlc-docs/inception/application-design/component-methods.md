@@ -1,109 +1,69 @@
 # Component Methods
 
-## MathEngine
+## math_engine.py
 
 ### Arithmetic
+- `add(a: float, b: float) -> float`
+- `subtract(a: float, b: float) -> float`
+- `multiply(a: float, b: float) -> float`
+- `divide(a: float, b: float) -> float` — raises DivisionByZeroError
+- `modulo(a: float, b: float) -> float` — raises DivisionByZeroError
+- `absolute(a: float) -> float`
+- `negate(a: float) -> float`
 
-| Method | Inputs | Outputs | Preconditions | Postconditions |
-|---|---|---|---|---|
-| add | a: Number, b: Number | Number | None | result = a + b |
-| subtract | a: Number, b: Number | Number | None | result = a - b |
-| multiply | a: Number, b: Number | Number | None | result = a * b |
-| divide | a: Number, b: Number | Number | b ≠ 0 | result = a / b |
-| modulo | a: Number, b: Number | Number | b ≠ 0 | result = a % b |
-| abs | a: Number | Number | None | result = |a| |
-| negate | a: Number | Number | None | result = -a |
-
-### Powers and Roots
-
-| Method | Inputs | Outputs | Preconditions | Postconditions |
-|---|---|---|---|---|
-| power | base: Number, exponent: Number | Number | None | result = base^exponent |
-| sqrt | a: Number | Number | a >= 0 | result = √a |
-| cbrt | a: Number | Number | None | result = ∛a |
-| square | a: Number | Number | None | result = a² |
-| nth_root | a: Number, n: Integer | Number | n ≠ 0; if n is even then a >= 0 | result = a^(1/n) |
+### Powers
+- `power(base: float, exponent: float) -> float` — raises OverflowError
+- `sqrt(a: float) -> float` — raises DomainError if a < 0
+- `cbrt(a: float) -> float`
+- `square(a: float) -> float`
+- `nth_root(a: float, n: int) -> float` — raises DomainError if a < 0 and n is even
 
 ### Trigonometry
-
-| Method | Inputs | Outputs | Preconditions | Postconditions |
-|---|---|---|---|---|
-| sin | a: Number, angle_unit: AngleUnit | Number | None | result = sin(a) |
-| cos | a: Number, angle_unit: AngleUnit | Number | None | result = cos(a) |
-| tan | a: Number, angle_unit: AngleUnit | Number | None | result = tan(a) |
-| asin | a: Number, angle_unit: AngleUnit | Number | -1 <= a <= 1 | result = arcsin(a) |
-| acos | a: Number, angle_unit: AngleUnit | Number | -1 <= a <= 1 | result = arccos(a) |
-| atan | a: Number, angle_unit: AngleUnit | Number | None | result = arctan(a) |
-| atan2 | y: Number, x: Number, angle_unit: AngleUnit | Number | None | result = atan2(y, x) |
-| sinh | a: Number | Number | None | result = sinh(a) |
-| cosh | a: Number | Number | None | result = cosh(a) |
-| tanh | a: Number | Number | None | result = tanh(a) |
-| asinh | a: Number | Number | None | result = asinh(a) |
-| acosh | a: Number | Number | a >= 1 | result = acosh(a) |
-| atanh | a: Number | Number | -1 < a < 1 | result = atanh(a) |
+- `sin(a: float, angle_unit: str) -> float`
+- `cos(a: float, angle_unit: str) -> float`
+- `tan(a: float, angle_unit: str) -> float`
+- `asin(a: float, angle_unit: str) -> float` — raises DomainError if |a| > 1
+- `acos(a: float, angle_unit: str) -> float` — raises DomainError if |a| > 1
+- `atan(a: float, angle_unit: str) -> float`
+- `atan2(y: float, x: float, angle_unit: str) -> float`
+- `sinh(a: float) -> float`
+- `cosh(a: float) -> float`
+- `tanh(a: float) -> float`
+- `asinh(a: float) -> float`
+- `acosh(a: float) -> float` — raises DomainError if a < 1
+- `atanh(a: float) -> float` — raises DomainError if |a| >= 1
 
 ### Logarithmic
-
-| Method | Inputs | Outputs | Preconditions | Postconditions |
-|---|---|---|---|---|
-| ln | a: Number | Number | a > 0 | result = ln(a) |
-| log10 | a: Number | Number | a > 0 | result = log10(a) |
-| log2 | a: Number | Number | a > 0 | result = log2(a) |
-| log | a: Number, base: Number | Number | a > 0, base > 0, base ≠ 1 | result = log_base(a) |
-| exp | a: Number | Number | None | result = e^a |
+- `ln(a: float) -> float` — raises DomainError if a <= 0
+- `log10(a: float) -> float` — raises DomainError if a <= 0
+- `log2(a: float) -> float` — raises DomainError if a <= 0
+- `log(a: float, base: float) -> float` — raises DomainError if a <= 0 or base <= 0 or base == 1
+- `exp(a: float) -> float` — raises OverflowError
 
 ### Statistics
-
-| Method | Inputs | Outputs | Preconditions | Postconditions |
-|---|---|---|---|---|
-| mean | values: List[Number] | Number | len(values) >= 1 | result = arithmetic mean |
-| median | values: List[Number] | Number | len(values) >= 1 | result = middle value |
-| mode | values: List[Number] | Number | len(values) >= 1 | result = most frequent (smallest on tie) |
-| stdev | values: List[Number] | Number | len(values) >= 2 | result = sample standard deviation |
-| variance | values: List[Number] | Number | len(values) >= 2 | result = sample variance |
-| pstdev | values: List[Number] | Number | len(values) >= 1 | result = population standard deviation |
-| pvariance | values: List[Number] | Number | len(values) >= 1 | result = population variance |
-| min | values: List[Number] | Number | len(values) >= 1 | result = minimum value |
-| max | values: List[Number] | Number | len(values) >= 1 | result = maximum value |
-| sum | values: List[Number] | Number | len(values) >= 1 | result = sum of values |
-| count | values: List[Number] | Integer | len(values) >= 1 | result = len(values) |
+- `mean(values: list[float]) -> float`
+- `median(values: list[float]) -> float`
+- `mode(values: list[float]) -> float` — returns smallest on ties
+- `stdev(values: list[float]) -> float` — requires len >= 2
+- `variance(values: list[float]) -> float` — requires len >= 2
+- `pstdev(values: list[float]) -> float`
+- `pvariance(values: list[float]) -> float`
+- `min_val(values: list[float]) -> float`
+- `max_val(values: list[float]) -> float`
+- `sum_val(values: list[float]) -> float`
+- `count(values: list[float]) -> int`
 
 ### Constants
-
-| Method | Inputs | Outputs | Preconditions | Postconditions |
-|---|---|---|---|---|
-| get_constant | name: String | Number | name is a known constant | result = constant value |
-| get_all_constants | (none) | Map[String, Number] | None | result = all constant name-value pairs |
+- `get_constant(name: str) -> float` — raises KeyError if unknown
+- `get_all_constants() -> dict[str, float]`
 
 ### Conversions
+- `convert_angle(value: float, from_unit: str, to_unit: str) -> float`
+- `convert_temperature(value: float, from_unit: str, to_unit: str) -> float`
+- `convert_length(value: float, from_unit: str, to_unit: str) -> float`
+- `convert_weight(value: float, from_unit: str, to_unit: str) -> float`
 
-| Method | Inputs | Outputs | Preconditions | Postconditions |
-|---|---|---|---|---|
-| convert_angle | value: Number, from_unit: AngleUnit, to_unit: AngleUnit | Number | from_unit and to_unit are valid | result = converted value |
-| convert_temperature | value: Number, from_unit: TempUnit, to_unit: TempUnit | Number | from_unit and to_unit are valid | result = converted value |
-| convert_length | value: Number, from_unit: LengthUnit, to_unit: LengthUnit | Number | from_unit and to_unit are valid | result = converted value |
-| convert_weight | value: Number, from_unit: WeightUnit, to_unit: WeightUnit | Number | from_unit and to_unit are valid | result = converted value |
-
-## Router
-
-| Method | Inputs | Outputs | Preconditions | Postconditions |
-|---|---|---|---|---|
-| health_check | (none) | HealthResponse | None | Returns status ok with version |
-| arithmetic_operation | operation: String, body: ArithmeticRequest | SuccessResponse | operation is valid | Delegates to MathEngine, wraps result |
-| powers_operation | operation: String, body: PowersRequest | SuccessResponse | operation is valid | Delegates to MathEngine, wraps result |
-| trigonometry_operation | operation: String, body: TrigRequest | SuccessResponse | operation is valid | Delegates to MathEngine, wraps result |
-| logarithmic_operation | operation: String, body: LogRequest | SuccessResponse | operation is valid | Delegates to MathEngine, wraps result |
-| statistics_operation | operation: String, body: StatsRequest | SuccessResponse | operation is valid | Delegates to MathEngine, wraps result |
-| get_constant | name: String | SuccessResponse | None | Delegates to MathEngine, wraps result |
-| get_all_constants | (none) | SuccessResponse | None | Delegates to MathEngine, wraps result |
-| conversions_operation | category: String, body: ConversionRequest | SuccessResponse | category is valid | Delegates to MathEngine, wraps result |
-
-## Models
-
-Models is a type-definition component — it exposes no methods, only data structures (schemas).
-
-## App
-
-| Method | Inputs | Outputs | Preconditions | Postconditions |
-|---|---|---|---|---|
-| create_app | (none) | Application | None | Application configured with all routers and handlers |
+## Custom Exceptions (in math_engine.py or a shared exceptions module)
+- `DomainError(message: str)` — input outside mathematical domain
+- `DivisionByZeroError(message: str)` — division/modulo by zero
+- `OverflowError` — result exceeds representable range (re-use Python builtin)
