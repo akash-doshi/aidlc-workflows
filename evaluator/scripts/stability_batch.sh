@@ -19,6 +19,8 @@ ADAPTER=${ADAPTER:-claude-cli}
 SCOPE=${SCOPE:-mvp}
 WAVES=${WAVES:-3}
 PER_WAVE=${PER_WAVE:-7}
+# Bedrock region for the run (codex-cli's gpt-5.x map is enabled in us-east-1).
+REGION=${REGION:-us-west-2}
 LOGDIR="/tmp/aidlc-stability-${ADAPTER}-$(date -u +%Y%m%dT%H%M%S)"
 mkdir -p "$LOGDIR"
 echo "Batch runner: adapter=$ADAPTER scope=$SCOPE — $WAVES waves x $PER_WAVE concurrent = $((WAVES*PER_WAVE)) runs"
@@ -33,7 +35,7 @@ run_one() {
     --golden test_cases/sci-calc-v2/golden-aidlc-docs \
     --openapi test_cases/sci-calc-v2/openapi.yaml \
     --scorer-model global.anthropic.claude-opus-4-6-v1 \
-    --region us-west-2 \
+    --region "$REGION" \
     > "$LOGDIR/$tag.log" 2>&1
   echo "  [$tag] finished (exit=$?)"
 }

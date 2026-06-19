@@ -125,6 +125,7 @@ def run_cli_evaluation(
     rules_repo: str = "https://github.com/awslabs/aidlc-workflows.git",
     kiro_dist_path: Path | None = None,
     claude_dist_path: Path | None = None,
+    codex_dist_path: Path | None = None,
     scope: str = "mvp",
     test_run: bool = True,
 ) -> tuple[AdapterResult, int]:
@@ -165,6 +166,7 @@ def run_cli_evaluation(
         timeout_seconds=timeout_seconds,
         kiro_dist_path=kiro_dist_path,
         claude_dist_path=claude_dist_path,
+        codex_dist_path=codex_dist_path,
         scope=scope,
         test_run=test_run,
     )

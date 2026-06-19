@@ -228,10 +228,22 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--codex-dist",
+        type=Path,
+        default=None,
+        help=(
+            "Path to the codex distribution directory (e.g. dist/codex). When set, "
+            "the codex-cli adapter copies its .codex/ + .agents/ + AGENTS.md into the "
+            "workspace, git-inits it, writes a scratch CODEX_HOME, and drives the "
+            "/aidlc skill via `codex exec`. Defaults to dist/codex relative to the git "
+            "root. Requires codex >= 0.139.0 and bun on PATH."
+        ),
+    )
+    parser.add_argument(
         "--scope",
         default="mvp",
-        help="Scope for the /aidlc skill (e.g. mvp, poc, feature). Shared by both "
-        "the claude-cli and kiro-cli adapters. Default: mvp",
+        help="Scope for the /aidlc skill (e.g. mvp, poc, feature). Shared by the "
+        "claude-cli, kiro-cli, and codex-cli adapters. Default: mvp",
     )
     parser.add_argument(
         "--no-test-run",
@@ -365,6 +377,23 @@ def main() -> None:
     else:
         print("  Claude distribution: not found — using v1 monolith prompt")
 
+    # Resolve codex_dist_path — explicit arg, then auto-detect from git root.
+    codex_dist_path: Path | None = None
+    if args.codex_dist:
+        codex_dist_path = Path(args.codex_dist).resolve()
+    else:
+        candidate = git_root / "dist" / "codex"
+        if candidate.is_dir():
+            codex_dist_path = candidate
+
+    if codex_dist_path:
+        print(
+            f"  Codex distribution: {codex_dist_path} "
+            f"(scope={args.scope}, test_run={not args.no_test_run})"
+        )
+    else:
+        print("  Codex distribution: not found")
+
     result, eval_rc = run_cli_evaluation(
         adapter=adapter,
         vision_path=vision_path,
@@ -383,6 +412,7 @@ def main() -> None:
         rules_repo=rules_repo,
         kiro_dist_path=kiro_dist_path,
         claude_dist_path=claude_dist_path,
+        codex_dist_path=codex_dist_path,
         scope=args.scope,
         test_run=not args.no_test_run,
     )

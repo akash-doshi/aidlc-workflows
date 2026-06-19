@@ -6,7 +6,7 @@ It dispatches to specialized runner scripts in the scripts/ directory.
 
 Available modes:
   - full       Full evaluation (execute workflow + score outputs)
-  - cli        Evaluation through a CLI AI assistant (kiro-cli, claude-cli)
+  - cli        Evaluation through a CLI AI assistant (kiro-cli, claude-cli, codex-cli)
   - ide        Evaluation through an IDE AI assistant (cursor, cline, kiro)
   - batch      Batch evaluation across multiple models
   - compare    Generate cross-model comparison report
@@ -85,7 +85,7 @@ def main() -> None:
     # CLI evaluation mode
     subparsers.add_parser(
         "cli",
-        help="Evaluation through CLI AI assistants (kiro-cli, claude-cli)",
+        help="Evaluation through CLI AI assistants (kiro-cli, claude-cli, codex-cli)",
         add_help=False,
     )
 

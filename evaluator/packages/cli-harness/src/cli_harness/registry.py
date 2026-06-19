@@ -5,11 +5,13 @@ from __future__ import annotations
 from cli_harness.adapter import CLIAdapter
 
 # Lazy imports to avoid pulling in adapter-specific deps at import time.
-# Both adapters drive the REAL vendor CLI in a terminal (customer fidelity):
-# kiro-cli via a `kiro-cli chat` subprocess, claude-cli via a PTY.
+# All adapters drive the REAL vendor CLI in a terminal (customer fidelity):
+# kiro-cli via a `kiro-cli chat` subprocess, claude-cli via a PTY, codex-cli
+# via a `codex exec` subprocess.
 _ADAPTER_MAP: dict[str, str] = {
     "kiro-cli": "cli_harness.adapters.kiro_cli.KiroCLIAdapter",
     "claude-cli": "cli_harness.adapters.claude_cli.ClaudeCLIAdapter",
+    "codex-cli": "cli_harness.adapters.codex_cli.CodexCLIAdapter",
 }
 
 
