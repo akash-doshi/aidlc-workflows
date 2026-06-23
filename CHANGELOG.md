@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.3] - 2026-06-23
+
+Adds the AI-DLC dashboard for Codex — the first AI-DLC-authored MCP server — and brings the Codex conductor to reviewer parity. The dashboard is a local stdio MCP server (`aidlc-dashboard-mcp.ts`) that renders live workflow state (project, phase, current stage, status, next stage, and the stage spine) as a Codex MCP-app panel, read straight from `aidlc-docs/aidlc-state.md` (no fabricated fields) and themed from the host (no hardcoded colors). Codex registers it via `[mcp_servers.aidlc-dashboard]` and the conductor refreshes it on each stage transition. Separately, the Codex orchestrator skill now honours the §12a reviewer step, which the engine already attached to gated directives but the Codex conductor previously ignored. Re-copy your `dist/codex/` to pick up the new tools and config.
+
+* **New: AI-DLC dashboard panel (Codex).** A read-only MCP-UI app showing live state; register `[mcp_servers.aidlc-dashboard]` (shipped in the default `dist/codex/.codex/config.toml`) and invoke the `aidlc_dashboard` tool. Reads only real `aidlc-state.md` fields; uninitialized workspaces render an empty state rather than erroring.
+* **Codex reviewer step (§12a) now runs.** The `gate: true` branch of the Codex SKILL.md invokes `directive.reviewer` (honouring `reviewer_max_iterations`) before the human gate, at parity with Claude and Kiro. Previously the v2 reviewer mechanism silently no-op'd on Codex.
+* **New tools** `aidlc-dashboard-mcp.ts` + `aidlc-dashboard-panel.ts` ship in every `dist/<harness>/tools/`; only Codex wires the server by default.
+
 ## [2.0.2] - 2026-06-18
 
 Validates the stage `reviewer:` / `reviewer_max_iterations` frontmatter fields, which were carried through schema → graph → directive by the 2.0.0 reviewer mechanism but never checked. A malformed cap, a non-positive-integer cap, a cap declared with no reviewer, or a `reviewer:` naming an agent with no `.claude/agents/*.md` file all passed validation before and surfaced only as a runtime failure or a silently-disabled review loop; they now fail validation/compile loudly and deterministically. This is a behaviour change at authoring time only — the reviewer's runtime behaviour is unchanged. Re-copy your `dist/<harness>/` to pick up the regenerated tools. Refs #389.

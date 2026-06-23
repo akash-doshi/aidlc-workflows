@@ -102,6 +102,15 @@ default_mode_request_user_input = true
 # update_plan tool, which the orchestrator skill keeps current per stage.
 [tui]
 status_line = ["model-with-reasoning", "git-branch", "task-progress", "context-used"]
+
+# AI-DLC dashboard (MCP-UI): a local stdio MCP server that renders live workflow
+# state (phase, current stage, status, next stage, stage spine) as a Codex
+# MCP-app panel. Read-only; reads aidlc-docs/aidlc-state.md. The conductor calls
+# the aidlc_dashboard tool on each stage transition to refresh the panel. Set
+# AIDLC_PROJECT_DIR if the server runs outside the project root.
+[mcp_servers.aidlc-dashboard]
+command = "bun"
+args = [".codex/tools/aidlc-dashboard-mcp.ts"]
 `;
 }
 
