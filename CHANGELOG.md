@@ -9,6 +9,7 @@ Adds the AI-DLC dashboard for Codex — the first AI-DLC-authored MCP server —
 * **New: AI-DLC dashboard panel (Codex).** A read-only MCP-UI app showing live state; register `[mcp_servers.aidlc-dashboard]` (shipped in the default `dist/codex/.codex/config.toml`) and invoke the `aidlc_dashboard` tool. Reads only real `aidlc-state.md` fields; uninitialized workspaces render an empty state rather than erroring.
 * **Codex reviewer step (§12a) now runs.** The `gate: true` branch of the Codex SKILL.md invokes `directive.reviewer` (honouring `reviewer_max_iterations`) before the human gate, at parity with Claude and Kiro. Previously the v2 reviewer mechanism silently no-op'd on Codex.
 * **New tools** `aidlc-dashboard-mcp.ts` + `aidlc-dashboard-panel.ts` ship in every `dist/<harness>/tools/`; only Codex wires the server by default.
+* **Dashboard is a flow diagram.** The panel renders the lifecycle as a connected phase spine (Initialization → Operation) with the active phase expanded into its numbered stages; each stage joins the stage-graph for its number/name/phase, and phase status is derived from stage states (so it stays correct even if the state file's Phase Progress block lags). Self-themed (dark/light via prefers-color-scheme).
 
 ## [2.0.2] - 2026-06-18
 

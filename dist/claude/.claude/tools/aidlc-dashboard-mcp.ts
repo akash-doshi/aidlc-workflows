@@ -21,7 +21,7 @@
  * Project dir resolves from AIDLC_PROJECT_DIR or process.cwd().
  */
 
-import { readStateFile, getField, parseCheckboxes } from "./aidlc-lib.ts";
+import { readStateFile, getField, parseCheckboxes, loadStageGraph } from "./aidlc-lib.ts";
 
 const UI_URI = "ui://aidlc/panel";
 const MCP_UI_MIME = "text/html;profile=mcp-app";
@@ -35,7 +35,7 @@ export interface DashboardState {
   status: string;
   nextStage: string;
   phases: { name: string; status: string }[];
-  stages: { slug: string; state: string; suffix: string }[];
+  stages: { slug: string; state: string; suffix: string; number: string; name: string; phase: string }[];
 }
 
 const EMPTY: DashboardState = {
@@ -57,6 +57,46 @@ export function readDashboardState(projectDir: string): DashboardState {
   } catch {
     return EMPTY;
   }
+  // Join checkbox state with the stage-graph so each stage carries its phase,
+  // number, and display name (the state file has only slug+state+suffix).
+  let graph: ReturnType<typeof loadStageGraph> = [];
+  try {
+    graph = loadStageGraph();
+  } catch {
+    graph = [];
+  }
+  const bySlug = new Map(graph.map((n) => [n.slug, n]));
+  const titleCasePhase = (p: string) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+  const lifecyclePhase = (getField(content, "Lifecycle Phase") ?? "").toUpperCase();
+
+  const stages = parseCheckboxes(content).map((c) => {
+    const node = bySlug.get(c.slug);
+    return {
+      slug: c.slug,
+      state: c.state,
+      suffix: c.suffix,
+      number: node?.number ?? "",
+      name: node?.name ?? c.slug,
+      phase: node ? titleCasePhase(node.phase) : "",
+    };
+  });
+
+  // Phase status, derived authoritatively from the stages + the Lifecycle Phase
+  // field. The "## Phase Progress" block in aidlc-state.md can lag behind the
+  // actual run (e.g. after a jump), so we do NOT trust it: a phase whose stages
+  // are all done/skipped is Verified; the phase matching Lifecycle Phase (or
+  // holding the current in-progress/awaiting stage) is Active; the rest Pending.
+  const phaseStatus = (name: string): string => {
+    const inPhase = stages.filter((s) => s.phase === name);
+    if (inPhase.length === 0) return "Pending";
+    const hasCurrent = inPhase.some((s) => s.state === "in-progress" || s.state === "awaiting-approval" || s.state === "revising");
+    const allSettled = inPhase.every((s) => s.state === "completed" || s.state === "skipped");
+    const isLifecycle = name.toUpperCase() === lifecyclePhase;
+    if (hasCurrent || isLifecycle) return "Active";
+    if (allSettled) return "Verified";
+    return "Pending";
+  };
+
   return {
     initialized: true,
     project: getField(content, "Project") ?? "",
@@ -64,8 +104,8 @@ export function readDashboardState(projectDir: string): DashboardState {
     currentStage: getField(content, "Current Stage") ?? "",
     status: getField(content, "Status") ?? "",
     nextStage: getField(content, "Next Stage") ?? "",
-    phases: PHASES.map((name) => ({ name, status: getField(content, name) ?? "Pending" })),
-    stages: parseCheckboxes(content).map((c) => ({ slug: c.slug, state: c.state, suffix: c.suffix })),
+    phases: PHASES.map((name) => ({ name, status: phaseStatus(name) })),
+    stages,
   };
 }
 

@@ -24,6 +24,9 @@ import { tmpdir } from "node:os";
 const BUN = process.execPath;
 const SERVER = join(REPO_ROOT, "core", "tools", "aidlc-dashboard-mcp.ts");
 const PANEL = join(REPO_ROOT, "core", "tools", "aidlc-dashboard-panel.ts");
+// the compiled stage-graph lives only in dist; point the server at it so the
+// stage→phase/number/name join is exercised (matches a real install layout).
+const STAGE_GRAPH = join(REPO_ROOT, "dist", "codex", ".codex", "tools", "data", "stage-graph.json");
 
 // A minimal but real-format aidlc-state.md fixture with KNOWN values.
 const FIXTURE_STATE = `# AI-DLC State Tracking
@@ -74,7 +77,7 @@ function rpc(requests: object[]): Record<number, any> {
     stdin: new TextEncoder().encode(stdin),
     stdout: "pipe",
     stderr: "ignore",
-    env: { ...process.env, AIDLC_PROJECT_DIR: work },
+    env: { ...process.env, AIDLC_PROJECT_DIR: work, AIDLC_STAGE_GRAPH: STAGE_GRAPH },
   });
   const out = new TextDecoder().decode(r.stdout).trim();
   const byId: Record<number, any> = {};
@@ -114,7 +117,7 @@ describe("AC1 — dashboard MCP server contract", () => {
       { jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "aidlc_dashboard" } },
     ]);
     const sc = res[4].result.structuredContent;
-    // exact field set — no fabricated keys
+    // exact top-level field set — no fabricated keys
     expect(Object.keys(sc).sort()).toEqual(
       ["currentStage", "initialized", "nextStage", "phase", "phases", "project", "stages", "status"].sort(),
     );
@@ -125,8 +128,18 @@ describe("AC1 — dashboard MCP server contract", () => {
     expect(sc.currentStage).toBe("application-design");
     expect(sc.nextStage).toBe("units-generation");
     expect(sc.status).toBe("Running");
-    // 5 phases with real statuses
-    expect(sc.phases.map((p: any) => p.status)).toEqual(["Verified", "Verified", "Active", "Pending", "Pending"]);
+    // each stage is joined with the stage-graph → carries number/name/phase
+    const appDesign = sc.stages.find((s: any) => s.slug === "application-design");
+    expect(appDesign.number).toBe("2.6");
+    expect(appDesign.name).toBe("Application Design");
+    expect(appDesign.phase).toBe("Inception");
+    expect(Object.keys(appDesign).sort()).toEqual(["name", "number", "phase", "slug", "state", "suffix"].sort());
+    // phase status is DERIVED authoritatively (not the lagging Phase Progress block):
+    // Inception holds the awaiting-approval stage → Active; earlier phases all settled → Verified
+    const byPhase = Object.fromEntries(sc.phases.map((p: any) => [p.name, p.status]));
+    expect(byPhase["Inception"]).toBe("Active");
+    expect(byPhase["Initialization"]).toBe("Verified");
+    expect(byPhase["Construction"]).toBe("Pending");
     // all 6 checkbox states represented from the fixture
     const states = sc.stages.map((s: any) => s.state);
     for (const st of ["completed", "skipped", "awaiting-approval", "in-progress", "revising", "pending"]) {

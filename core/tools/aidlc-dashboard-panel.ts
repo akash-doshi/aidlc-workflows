@@ -2,126 +2,168 @@
  * aidlc-dashboard-panel — the MCP-UI panel HTML for the AI-DLC dashboard.
  *
  * Served by aidlc-dashboard-mcp.ts at `ui://aidlc/panel` (MIME text/html;profile=mcp-app).
- * Design: aidlc-docs/inception/refined-mockups/* + codex-design-system.md.
+ * A flow-diagram visualization: phases as a connected spine, the active phase
+ * expands into a numbered sub-flow of its stages, current stage emphasized.
  *
- * Rules (provable in tests):
- *  - Host-theme ONLY: colors/fonts come from MCP Apps SDK host context
- *    (window.openai theme/styleVariables). NO hardcoded brand hex.
- *  - Near-zero prose. Flex rows on a 4px baseline (no absolute-positioned dots).
- *  - Renders all 6 checkbox states + 5 phases from injected state.
- *  - Reactive: re-renders on host data push; displayMode adapts inline/tab.
+ * Theming: self-themed (the MCP sandbox does not reliably expose host --color-*
+ * tokens, so we own the palette). Honors prefers-color-scheme; defaults to the
+ * Codex dark register.
+ *
+ * State shape (structuredContent): { initialized, project, phase, currentStage,
+ *   status, nextStage, phases[{name,status}], stages[{slug,state,suffix,number,name,phase}] }
  */
 
 const STYLE = `
-:root{
-  color-scheme: light dark;
-  /* every value falls back to a host token; no brand hex literals */
-  --bg: var(--color-background-primary, Canvas);
-  --bg2: var(--color-background-secondary, color-mix(in srgb, CanvasText 8%, Canvas));
-  --fg: var(--color-text-primary, CanvasText);
-  --fg2: var(--color-text-secondary, color-mix(in srgb, CanvasText 62%, Canvas));
-  --fg3: var(--color-text-tertiary, color-mix(in srgb, CanvasText 38%, Canvas));
-  --line: var(--color-border-primary, color-mix(in srgb, CanvasText 12%, Canvas));
-  --accent: var(--color-text-accent, AccentColor);
-  --ok: var(--color-text-success, var(--color-icon-success, green));
-  --warn: var(--color-text-warning, var(--color-icon-warning, orange));
-  --rev: var(--color-text-info, var(--accent));
-  --font: var(--font-sans, -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif);
-  --mono: var(--font-mono, ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace);
-  --u: 4px;
-}
 *{box-sizing:border-box}
+:root{
+  --bg:#0e0f11; --bg2:#16181b; --panel:#1b1e22;
+  --fg:#f2f3f5; --fg2:#a8adb4; --fg3:#6b7077;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --accent:#4aa3ff; --accent-dim:rgba(74,163,255,.16);
+  --ok:#2fb170; --ok-dim:rgba(47,177,112,.16);
+  --warn:#f0883e; --warn-dim:rgba(240,136,62,.15);
+  --rev:#a472f0; --rev-dim:rgba(164,114,240,.16);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: light){
+  :root{ --bg:#fbfbfc; --bg2:#fff; --panel:#fff; --fg:#16181b; --fg2:#5b616a;
+    --fg3:#9aa0a8; --line:rgba(13,13,13,.09); --line2:rgba(13,13,13,.16); }
+}
 html,body{margin:0;height:100%}
-body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--font);
-  font-weight:500;letter-spacing:-.1px;-webkit-font-smoothing:antialiased;
-  padding:calc(var(--u)*4) calc(var(--u)*5)}
-.row{display:flex;align-items:center;gap:calc(var(--u)*2);min-height:calc(var(--u)*9)}
-.lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg3);font-weight:600}
-.proj{font-size:16px;font-weight:600;letter-spacing:-.3px;margin:2px 0 0}
-.phase{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
-.stage{font-size:18px;font-weight:600;letter-spacing:-.4px;margin:1px 0 0}
-.meta{font-size:12px;color:var(--fg2);margin-top:2px}
-.meta b{color:var(--fg);font-weight:600}
-.gate{margin:calc(var(--u)*3) 0;padding:calc(var(--u)*2) calc(var(--u)*3);
-  border:1px solid color-mix(in srgb, var(--warn) 45%, transparent);
-  background:color-mix(in srgb, var(--warn) 12%, transparent);
-  border-radius:var(--border-radius-md, 8px);font-size:12.5px;font-weight:600;color:var(--warn)}
-.spine{margin-top:calc(var(--u)*4);border-top:1px solid var(--line)}
-.node{padding:calc(var(--u)*1) 0}
-.node .row .nm{font-size:13px;font-weight:600;letter-spacing:-.2px}
-.node.muted .nm{color:var(--fg3)}
-.cnt{margin-left:auto;font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums}
-.st{font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--fg3)}
-.st.active{color:var(--accent)} .st.verified{color:var(--ok)}
-.sub{margin:calc(var(--u)*1) 0 calc(var(--u)*2) calc(var(--u)*5)}
-.srow{display:flex;align-items:center;gap:calc(var(--u)*2);min-height:calc(var(--u)*7);font-size:12.5px}
-.dot{flex:0 0 14px;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-size:9px;font-weight:800;border:2px solid var(--fg3);color:var(--fg3);background:var(--bg)}
-.dot.completed{background:var(--ok);border-color:var(--ok);color:var(--bg)}
-.dot.in-progress{border-color:var(--accent);color:var(--accent)}
-.dot.awaiting-approval{background:var(--warn);border-color:var(--warn);color:var(--bg)}
-.dot.revising{border-color:var(--rev);color:var(--rev)}
-.dot.skipped{border-style:dashed;opacity:.5}
-.sname.skipped{color:var(--fg3);text-decoration:line-through}
-.snum{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--fg3)}
-.empty{color:var(--fg3);font-size:13px;margin-top:calc(var(--u)*4)}
+body{background:var(--bg);color:var(--fg);font:13px/1.5 var(--font);
+  -webkit-font-smoothing:antialiased;letter-spacing:-.1px;padding:20px 18px 28px}
+
+.hd{margin-bottom:18px}
+.kicker{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--fg3)}
+.title{font-size:17px;font-weight:680;letter-spacing:-.35px;margin:3px 0 0}
+.nowcard{margin-top:14px;background:var(--panel);border:1px solid var(--line);
+  border-radius:14px;padding:13px 15px;position:relative;overflow:hidden}
+.nowcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.nowphase{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.nowstage{font-size:16px;font-weight:650;letter-spacing:-.3px;margin:2px 0 1px;display:flex;align-items:center;gap:8px}
+.nowstage .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 0 0 var(--accent-dim);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(74,163,255,.5)}70%{box-shadow:0 0 0 7px rgba(74,163,255,0)}100%{box-shadow:0 0 0 0 rgba(74,163,255,0)}}
+.nowmeta{font-size:11.5px;color:var(--fg2)} .nowmeta b{color:var(--fg);font-weight:600}
+@media (prefers-reduced-motion: reduce){.nowstage .pulse{animation:none}}
+
+.gate{margin-top:12px;display:flex;align-items:center;gap:9px;background:var(--warn-dim);
+  border:1px solid rgba(240,136,62,.4);border-radius:12px;padding:10px 13px;
+  font-size:12px;font-weight:600;color:var(--warn)}
+.gate .g-ic{flex:0 0 16px;width:16px;height:16px;border-radius:50%;background:var(--warn);
+  color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+
+.flow{margin-top:20px;position:relative}
+.phase{position:relative;padding-left:30px;padding-bottom:6px}
+.phase::before{content:"";position:absolute;left:10px;top:24px;bottom:-4px;width:2px;background:var(--line2)}
+.phase:last-child::before{display:none}
+.phase.done::before{background:var(--ok)}
+.phase.active::before{background:linear-gradient(var(--accent) 40%,var(--line2))}
+.phead{display:flex;align-items:center;gap:9px;min-height:26px}
+.pnode{position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;
+  border:2px solid var(--fg3);color:var(--fg3);background:var(--bg)}
+.phase.done .pnode{background:var(--ok);border-color:var(--ok);color:#06140d}
+.phase.active .pnode{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 4px var(--accent-dim)}
+.pname{font-size:13.5px;font-weight:650;letter-spacing:-.2px}
+.phase:not(.active):not(.done) .pname{color:var(--fg3)}
+.pbadge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg3);
+  border:1px solid var(--line2);border-radius:999px;padding:1px 7px}
+.phase.active .pbadge{color:var(--accent);border-color:var(--accent-dim);background:var(--accent-dim)}
+.phase.done .pbadge{color:var(--ok);border-color:var(--ok-dim);background:var(--ok-dim)}
+.pcount{margin-left:auto;font-size:10.5px;color:var(--fg3);font-variant-numeric:tabular-nums}
+
+.stages{margin:8px 0 16px;display:flex;flex-direction:column;gap:2px}
+.snode{position:relative;display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:10px;border:1px solid transparent}
+.snode.cur{background:var(--panel);border-color:var(--line2)}
+.sdot{flex:0 0 18px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:9px;font-weight:800;border:2px solid var(--fg3);color:var(--fg3);background:var(--bg2)}
+.sdot.completed{background:var(--ok);border-color:var(--ok);color:#06140d}
+.sdot.in-progress{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.sdot.awaiting-approval{background:var(--warn);border-color:var(--warn);color:var(--bg)}
+.sdot.revising{border-color:var(--rev);color:var(--rev);box-shadow:0 0 0 3px var(--rev-dim)}
+.sdot.skipped{border-style:dashed;opacity:.45}
+.snum{font-family:var(--mono);font-size:10px;color:var(--fg3);flex:0 0 26px;font-variant-numeric:tabular-nums}
+.sname{font-size:12.5px;letter-spacing:-.15px}
+.snode.cur .sname{font-weight:650}
+.sname.skipped{color:var(--fg3);text-decoration:line-through;text-decoration-thickness:1px}
+.stag{margin-left:auto;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:1px 6px;border-radius:999px}
+.stag.awaiting-approval{color:var(--warn);background:var(--warn-dim)}
+.stag.in-progress{color:var(--accent);background:var(--accent-dim)}
+.stag.revising{color:var(--rev);background:var(--rev-dim)}
+
+.empty{color:var(--fg3);font-size:13px;margin-top:28px;text-align:center}
 `;
 
 const BODY = `
 <div id="root">
-  <div class="lbl">Project</div>
-  <div class="proj" id="project">—</div>
-  <div class="phase" id="phase"></div>
-  <div class="stage" id="stage">—</div>
-  <div class="meta" id="meta"></div>
-  <div id="gate"></div>
-  <div class="spine" id="spine"></div>
+  <div class="hd">
+    <div class="kicker">Project</div>
+    <div class="title" id="project">—</div>
+    <div class="nowcard" id="nowcard">
+      <div class="nowphase" id="nowphase"></div>
+      <div class="nowstage"><span class="pulse"></span><span id="nowstage">—</span></div>
+      <div class="nowmeta" id="nowmeta"></div>
+    </div>
+    <div id="gate"></div>
+  </div>
+  <div class="flow" id="flow"></div>
   <div class="empty" id="empty" hidden>AI-DLC workflow not initialized in this workspace.</div>
 </div>`;
 
 const SCRIPT = `
 (function(){
   var PHASES=["Initialization","Ideation","Inception","Construction","Operation"];
-  var GLY={completed:"\\u2713","awaiting-approval":"!",revising:"\\u21ba","in-progress":"","pending":"","skipped":""};
+  var GLY={completed:"\\u2713","awaiting-approval":"!","revising":"\\u21ba"};
+  var TAG={"awaiting-approval":"gate","in-progress":"active","revising":"revising"};
   function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
   function host(){return window.openai||window.oai||(window.mcp&&window.mcp.app)||{};}
-  function state(){var o=host();return o.toolOutput||o.toolInput||o.widgetData||(o.hostContext&&o.hostContext.toolOutput)||null;}
+  function data(){var o=host();return o.toolOutput||o.toolInput||o.widgetData||(o.hostContext&&o.hostContext.toolOutput)||null;}
   function render(){
-    var d=state();
-    var root=document.getElementById("root"),empty=document.getElementById("empty");
-    if(!d||!d.initialized){empty.hidden=false;document.getElementById("spine").innerHTML="";
-      document.getElementById("project").textContent="—";document.getElementById("stage").textContent="—";
-      document.getElementById("phase").textContent="";document.getElementById("meta").innerHTML="";
-      document.getElementById("gate").innerHTML="";return;}
-    empty.hidden=true;
-    document.getElementById("project").textContent=d.project||"Untitled";
-    document.getElementById("phase").textContent=(d.phase||"").toUpperCase();
-    document.getElementById("stage").textContent=d.currentStage||"—";
-    document.getElementById("meta").innerHTML="<b>"+esc(d.status||"")+"</b> \\u00b7 next: "+esc(d.nextStage||"\\u2014");
-    var awaiting=(d.stages||[]).filter(function(s){return s.state==="awaiting-approval";});
-    document.getElementById("gate").innerHTML=awaiting.length?
-      ('<div class="gate">Awaiting your approval: '+esc(awaiting[0].slug)+"</div>"):"";
+    var d=data();
+    var empty=document.getElementById("empty"),hd=document.querySelector(".hd"),flow=document.getElementById("flow");
+    if(!d||!d.initialized){empty.hidden=false;hd.style.display="none";flow.innerHTML="";return;}
+    empty.hidden=true;hd.style.display="";
+    document.getElementById("project").textContent=d.project||"Untitled workflow";
+    document.getElementById("nowphase").textContent=(d.phase||"").toUpperCase();
+    var cur=(d.stages||[]).filter(function(s){return s.state==="in-progress"||s.state==="awaiting-approval";})[0];
+    document.getElementById("nowstage").textContent=(cur&&cur.name)||d.currentStage||"—";
+    var nextNode=(d.stages||[]).filter(function(s){return s.slug===d.nextStage;})[0];
+    var nextLabel=(nextNode&&nextNode.name)||d.nextStage||"\\u2014";
+    document.getElementById("nowmeta").innerHTML="<b>"+esc(d.status||"")+"</b> \\u00b7 next: "+esc(nextLabel);
+    var awaiting=(d.stages||[]).filter(function(s){return s.state==="awaiting-approval";})[0];
+    document.getElementById("gate").innerHTML=awaiting?
+      ('<div class="gate"><span class="g-ic">!</span>Awaiting your approval \\u2014 '+esc(awaiting.name||awaiting.slug)+"</div>"):"";
+
+    var phStatus={};(d.phases||[]).forEach(function(p){phStatus[p.name]=p.status;});
     var byPhase={};PHASES.forEach(function(p){byPhase[p]=[];});
-    (d.stages||[]).forEach(function(s){ // bucket by phase via state order is unknown here; group all under active
-      // stages carry slug only; phase grouping uses the phases[] statuses for the rail
-    });
-    var html="";
-    (d.phases||[]).forEach(function(p){
-      var active=p.status==="Active",ver=p.status==="Verified";
-      html+='<div class="node '+(active||ver?"":"muted")+'">'+
-        '<div class="row"><span class="dot '+(ver?"completed":active?"in-progress":"")+'">'+(ver?GLY.completed:"")+'</span>'+
-        '<span class="nm">'+esc(p.name)+'</span>'+
-        '<span class="st '+(active?"active":ver?"verified":"")+'">'+esc(p.status)+'</span></div>';
+    (d.stages||[]).forEach(function(s){if(byPhase[s.phase])byPhase[s.phase].push(s);});
+
+    flow.innerHTML=PHASES.map(function(name){
+      var st=phStatus[name]||"Pending",active=st==="Active",done=st==="Verified";
+      var stages=byPhase[name]||[];
+      var inScope=stages.filter(function(s){return s.state!=="skipped";}).length;
+      var doneN=stages.filter(function(s){return s.state==="completed";}).length;
+      var cls=done?"done":active?"active":"";
+      var html='<div class="phase '+cls+'">'+
+        '<span class="pnode">'+(done?GLY.completed:"")+'</span>'+
+        '<div class="phead"><span class="pname">'+esc(name)+'</span>'+
+        '<span class="pbadge">'+esc(st)+'</span>'+
+        '<span class="pcount">'+doneN+'/'+inScope+'</span></div>';
       if(active){
-        html+='<div class="sub">'+(d.stages||[]).map(function(s){
-          var st=s.state||"pending";
-          return '<div class="srow"><span class="dot '+st+'">'+(GLY[st]||"")+'</span>'+
-            '<span class="sname '+(st==="skipped"?"skipped":"")+'">'+esc(s.slug)+'</span></div>';
+        html+='<div class="stages">'+stages.map(function(s){
+          var sc=s.state,curCls=(sc==="in-progress"||sc==="awaiting-approval")?" cur":"";
+          var tag=TAG[sc]?'<span class="stag '+sc+'">'+TAG[sc]+'</span>':"";
+          return '<div class="snode'+curCls+'">'+
+            '<span class="sdot '+sc+'">'+(GLY[sc]||"")+'</span>'+
+            '<span class="snum">'+esc(s.number||"")+'</span>'+
+            '<span class="sname '+(sc==="skipped"?"skipped":"")+'">'+esc(s.name||s.slug)+'</span>'+
+            tag+'</div>';
         }).join("")+'</div>';
       }
-      html+='</div>';
-    });
-    document.getElementById("spine").innerHTML=html;
+      return html+'</div>';
+    }).join("");
   }
   render();
   ["openai:set_globals","openai:set_theme","openai:tool_response","set_globals","message"].forEach(function(ev){
@@ -133,5 +175,6 @@ const SCRIPT = `
 export const PANEL_HTML =
   '<!doctype html><html><head><meta charset="utf-8">' +
   '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+  '<meta name="color-scheme" content="dark light">' +
   "<style>" + STYLE + "</style></head><body>" + BODY +
   "<script>" + SCRIPT + "</scr" + "ipt></body></html>";
