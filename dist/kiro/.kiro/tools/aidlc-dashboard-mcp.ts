@@ -35,7 +35,17 @@ export interface DashboardState {
   status: string;
   nextStage: string;
   phases: { name: string; status: string }[];
-  stages: { slug: string; state: string; suffix: string; number: string; name: string; phase: string }[];
+  stages: {
+    slug: string;
+    state: string;
+    suffix: string;
+    number: string;
+    name: string;
+    phase: string;
+    requires_stage: string[];
+    produces: string[];
+    consumes: string[];
+  }[];
 }
 
 const EMPTY: DashboardState = {
@@ -78,6 +88,9 @@ export function readDashboardState(projectDir: string): DashboardState {
       number: node?.number ?? "",
       name: node?.name ?? c.slug,
       phase: node ? titleCasePhase(node.phase) : "",
+      requires_stage: node?.requires_stage ?? [],
+      produces: node?.produces ?? [],
+      consumes: (node?.consumes ?? []).map((x) => x.artifact),
     };
   });
 
@@ -124,7 +137,15 @@ function fail(id: unknown, code: number, message: string) {
   send({ jsonrpc: "2.0", id, error: { code, message } });
 }
 
-const TOOL_META = { ui: { resourceUri: UI_URI }, "ui/resourceUri": UI_URI };
+const TOOL_META = {
+  ui: { resourceUri: UI_URI },
+  "ui/resourceUri": UI_URI,
+  // Inline frame sizing (Codex clamps inline height to [min 200, max 720], default 240).
+  // Request a taller default so the flow diagram is not stuck in a 240px scroll box.
+  "openai/widgetHeightHint": 560,
+  "openai/widgetMinFrameHeight": 320,
+  "openai/widgetPrefersBorder": true,
+};
 
 function projectDir(): string {
   return process.env.AIDLC_PROJECT_DIR?.trim() || process.cwd();
@@ -137,7 +158,7 @@ export function handleRequest(req: any) {
       return ok(id, {
         protocolVersion: params?.protocolVersion ?? "2025-06-18",
         capabilities: { tools: {}, resources: {} },
-        serverInfo: { name: "aidlc-dashboard", version: "0.1.0" },
+        serverInfo: { name: "aidlc-dashboard", title: "AI-DLC Dashboard", version: "0.1.0" },
       });
     case "notifications/initialized":
       return;

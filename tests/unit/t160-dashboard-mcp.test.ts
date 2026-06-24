@@ -99,6 +99,9 @@ describe("AC1 — dashboard MCP server contract", () => {
     expect(tool.name).toBe("aidlc_dashboard");
     expect(tool._meta.ui.resourceUri).toBe("ui://aidlc/panel");
     expect(tool.annotations.readOnlyHint).toBe(true);
+    // inline frame sizing hints so the flow diagram is not stuck in a 240px scroll box
+    expect(tool._meta["openai/widgetHeightHint"]).toBeGreaterThanOrEqual(320);
+    expect(tool._meta["openai/widgetHeightHint"]).toBeLessThanOrEqual(720);
   });
 
   test("resources/read returns MCP-UI MIME", () => {
@@ -128,12 +131,19 @@ describe("AC1 — dashboard MCP server contract", () => {
     expect(sc.currentStage).toBe("application-design");
     expect(sc.nextStage).toBe("units-generation");
     expect(sc.status).toBe("Running");
-    // each stage is joined with the stage-graph → carries number/name/phase
+    // each stage is joined with the stage-graph → carries number/name/phase + edges/artifacts
     const appDesign = sc.stages.find((s: any) => s.slug === "application-design");
     expect(appDesign.number).toBe("2.6");
     expect(appDesign.name).toBe("Application Design");
     expect(appDesign.phase).toBe("Inception");
-    expect(Object.keys(appDesign).sort()).toEqual(["name", "number", "phase", "slug", "state", "suffix"].sort());
+    expect(Object.keys(appDesign).sort()).toEqual(
+      ["consumes", "name", "number", "phase", "produces", "requires_stage", "slug", "state", "suffix"].sort(),
+    );
+    // requires_stage carries the DAG dependency edges from the graph
+    expect(appDesign.requires_stage).toContain("requirements-analysis");
+    // produces/consumes are flattened artifact-name arrays
+    expect(appDesign.produces).toContain("components");
+    expect(Array.isArray(appDesign.consumes)).toBe(true);
     // phase status is DERIVED authoritatively (not the lagging Phase Progress block):
     // Inception holds the awaiting-approval stage → Active; earlier phases all settled → Verified
     const byPhase = Object.fromEntries(sc.phases.map((p: any) => [p.name, p.status]));
@@ -169,5 +179,12 @@ describe("AC2 — panel is host-themed, no hardcoded brand color", () => {
     const { PANEL_HTML } = await import(PANEL);
     // the Codex brand/status literals must NOT appear — colors come from host tokens
     expect(/#339cff|#00a240|#e25507|#e02e2a|#0d0d0d|#1a1c1f/i.test(PANEL_HTML)).toBe(false);
+  });
+
+  test("panel is a flow diagram with a fullscreen-request bridge", async () => {
+    const { PANEL_HTML } = await import(PANEL);
+    expect(PANEL_HTML).toContain("requestDisplayMode"); // expand → fullscreen
+    expect(PANEL_HTML).toContain("requires_stage"); // draws dependency edges
+    expect(PANEL_HTML).toContain("AI-DLC"); // in-panel wordmark (correct title)
   });
 });
