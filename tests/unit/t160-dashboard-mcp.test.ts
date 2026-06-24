@@ -169,22 +169,40 @@ describe("AC1 — dashboard MCP server contract", () => {
   });
 });
 
-describe("AC2 — panel is host-themed, no hardcoded brand color", () => {
-  test("panel HTML references host theme context", async () => {
+describe("AC2 — panel reads host theme + self-themes with the Codex palette", () => {
+  test("panel HTML reads host theme context (theme/styleVariables/displayMode)", async () => {
     const { PANEL_HTML } = await import(PANEL);
     expect(/window\.openai|window\.oai|hostContext/.test(PANEL_HTML)).toBe(true);
+    expect(PANEL_HTML).toContain("styleVariables"); // applies host token overrides
+    expect(PANEL_HTML).toContain("displayMode"); // adapts inline vs fullscreen
   });
 
-  test("panel HTML contains no hardcoded brand hex", async () => {
+  test("panel self-themes for both dark and light (prefers-color-scheme)", async () => {
     const { PANEL_HTML } = await import(PANEL);
-    // the Codex brand/status literals must NOT appear — colors come from host tokens
-    expect(/#339cff|#00a240|#e25507|#e02e2a|#0d0d0d|#1a1c1f/i.test(PANEL_HTML)).toBe(false);
+    // it owns a palette so it is legible even when the host injects no tokens,
+    // and supports light via prefers-color-scheme + a data-theme override.
+    expect(PANEL_HTML).toContain("prefers-color-scheme");
+    expect(PANEL_HTML).toContain('data-theme');
   });
 
-  test("panel is a flow diagram with a fullscreen-request bridge", async () => {
+  test("panel is a flow diagram with a fullscreen toggle bridge", async () => {
     const { PANEL_HTML } = await import(PANEL);
     expect(PANEL_HTML).toContain("requestDisplayMode"); // expand → fullscreen
+    expect(PANEL_HTML).toContain("toggleMode"); // and collapse back to inline
     expect(PANEL_HTML).toContain("requires_stage"); // draws dependency edges
     expect(PANEL_HTML).toContain("AI-DLC"); // in-panel wordmark (correct title)
+  });
+
+  test("panel discovers phases from data and is space-aware + live-updating", async () => {
+    const { PANEL_HTML } = await import(PANEL);
+    // phases come from the data (d.phases), NOT a hard-coded list in the panel
+    expect(PANEL_HTML).toContain("d.phases");
+    expect(/var PHASES\s*=\s*\[/.test(PANEL_HTML)).toBe(false);
+    // fit-to-frame: reads the host container size and scales (preserveAspectRatio)
+    expect(PANEL_HTML).toContain("preserveAspectRatio");
+    expect(PANEL_HTML).toContain("Host.maxW");
+    // self-polls so it reflects aidlc-state.md changes without a manual tool call
+    expect(PANEL_HTML).toContain("callServerTool");
+    expect(PANEL_HTML).toContain("setInterval");
   });
 });

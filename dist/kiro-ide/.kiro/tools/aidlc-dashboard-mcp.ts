@@ -25,7 +25,21 @@ import { readStateFile, getField, parseCheckboxes, loadStageGraph } from "./aidl
 
 const UI_URI = "ui://aidlc/panel";
 const MCP_UI_MIME = "text/html;profile=mcp-app";
-const PHASES = ["Initialization", "Ideation", "Inception", "Construction", "Operation"] as const;
+
+// Phases are NOT hard-coded — they are discovered from the stage-graph (each node
+// carries `.phase`), preserving first-seen order. Adding a phase/skill to the graph
+// surfaces it in the dashboard automatically. A fallback list is used only if the
+// graph can't be read.
+const FALLBACK_PHASES = ["Initialization", "Ideation", "Inception", "Construction", "Operation"];
+const titleCase = (p: string) => (p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : p);
+function discoverPhases(graph: ReturnType<typeof loadStageGraph>): string[] {
+  const seen: string[] = [];
+  for (const n of graph) {
+    const p = titleCase(n.phase);
+    if (p && !seen.includes(p)) seen.push(p);
+  }
+  return seen.length ? seen : FALLBACK_PHASES;
+}
 
 export interface DashboardState {
   initialized: boolean;
@@ -55,7 +69,7 @@ const EMPTY: DashboardState = {
   currentStage: "",
   status: "",
   nextStage: "",
-  phases: PHASES.map((name) => ({ name, status: "Pending" })),
+  phases: FALLBACK_PHASES.map((name) => ({ name, status: "Pending" })),
   stages: [],
 };
 
@@ -76,7 +90,7 @@ export function readDashboardState(projectDir: string): DashboardState {
     graph = [];
   }
   const bySlug = new Map(graph.map((n) => [n.slug, n]));
-  const titleCasePhase = (p: string) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+  const phases = discoverPhases(graph); // ordered, from the graph — not hard-coded
   const lifecyclePhase = (getField(content, "Lifecycle Phase") ?? "").toUpperCase();
 
   const stages = parseCheckboxes(content).map((c) => {
@@ -87,7 +101,7 @@ export function readDashboardState(projectDir: string): DashboardState {
       suffix: c.suffix,
       number: node?.number ?? "",
       name: node?.name ?? c.slug,
-      phase: node ? titleCasePhase(node.phase) : "",
+      phase: node ? titleCase(node.phase) : "",
       requires_stage: node?.requires_stage ?? [],
       produces: node?.produces ?? [],
       consumes: (node?.consumes ?? []).map((x) => x.artifact),
@@ -117,7 +131,7 @@ export function readDashboardState(projectDir: string): DashboardState {
     currentStage: getField(content, "Current Stage") ?? "",
     status: getField(content, "Status") ?? "",
     nextStage: getField(content, "Next Stage") ?? "",
-    phases: PHASES.map((name) => ({ name, status: phaseStatus(name) })),
+    phases: phases.map((name) => ({ name, status: phaseStatus(name) })),
     stages,
   };
 }
