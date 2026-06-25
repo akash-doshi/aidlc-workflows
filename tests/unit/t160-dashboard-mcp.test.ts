@@ -62,10 +62,37 @@ const FIXTURE_STATE = `# AI-DLC State Tracking
 
 let work: string;
 
+// A small but real-format audit.md to exercise the presence layer (cycles 1 & 4).
+const FIXTURE_AUDIT = `# AI-DLC Audit Log
+
+## Stage Started
+**Timestamp**: 2026-05-28T08:00:00Z
+**Event**: STAGE_STARTED
+**Stage**: application-design
+**Agent**: aidlc-architect-agent
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-05-28T08:05:00Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: aidlc-docs/inception/application-design/components.md
+
+---
+
+## Gate Open
+**Timestamp**: 2026-05-28T08:06:00Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: application-design
+**Artifacts**: components.md, decisions.md
+`;
+
 beforeEach(() => {
   work = mkdtempSync(join(tmpdir(), "aidlc-dash-"));
   mkdirSync(join(work, "aidlc-docs"), { recursive: true });
   writeFileSync(join(work, "aidlc-docs", "aidlc-state.md"), FIXTURE_STATE);
+  writeFileSync(join(work, "aidlc-docs", "audit.md"), FIXTURE_AUDIT);
 });
 afterEach(() => rmSync(work, { recursive: true, force: true }));
 
@@ -120,9 +147,9 @@ describe("AC1 — dashboard MCP server contract", () => {
       { jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "aidlc_dashboard" } },
     ]);
     const sc = res[4].result.structuredContent;
-    // exact top-level field set — no fabricated keys
+    // exact top-level field set — no fabricated keys (presence layer joins audit.md)
     expect(Object.keys(sc).sort()).toEqual(
-      ["currentStage", "initialized", "nextStage", "phase", "phases", "project", "stages", "status"].sort(),
+      ["activeAgent", "currentStage", "initialized", "lastArtifact", "nextStage", "phase", "phases", "project", "recentEvents", "stages", "status"].sort(),
     );
     // values equal the fixture's real values
     expect(sc.initialized).toBe(true);
@@ -137,13 +164,19 @@ describe("AC1 — dashboard MCP server contract", () => {
     expect(appDesign.name).toBe("Application Design");
     expect(appDesign.phase).toBe("Inception");
     expect(Object.keys(appDesign).sort()).toEqual(
-      ["consumes", "name", "number", "phase", "produces", "requires_stage", "slug", "state", "suffix"].sort(),
+      ["consumes", "name", "number", "phase", "produces", "requires_stage", "risk", "slug", "state", "suffix"].sort(),
     );
     // requires_stage carries the DAG dependency edges from the graph
     expect(appDesign.requires_stage).toContain("requirements-analysis");
     // produces/consumes are flattened artifact-name arrays
     expect(appDesign.produces).toContain("components");
     expect(Array.isArray(appDesign.consumes)).toBe(true);
+    // danger-edge: design stages are safe; deploy/provision stages flag touches-cloud
+    expect(appDesign.risk).toBe("");
+    const deploy = sc.stages.find((s: any) => s.slug === "deployment-execution");
+    if (deploy) expect(deploy.risk).toBe("touches-cloud");
+    const codegen = sc.stages.find((s: any) => s.slug === "code-generation");
+    if (codegen) expect(codegen.risk).toBe("writes-code");
     // phase status is DERIVED authoritatively (not the lagging Phase Progress block):
     // Inception holds the awaiting-approval stage → Active; earlier phases all settled → Verified
     const byPhase = Object.fromEntries(sc.phases.map((p: any) => [p.name, p.status]));
@@ -157,6 +190,19 @@ describe("AC1 — dashboard MCP server contract", () => {
     }
     // the result must carry the UI template link too
     expect(res[4].result._meta.ui.resourceUri).toBe("ui://aidlc/panel");
+  });
+
+  test("presence layer joins audit.md (active agent, recent events, last artifact)", () => {
+    const res = rpc([
+      { jsonrpc: "2.0", id: 1, method: "initialize", params: {} },
+      { jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "aidlc_dashboard" } },
+    ]);
+    const sc = res[4].result.structuredContent;
+    expect(sc.activeAgent).toBe("aidlc-architect-agent"); // from current stage's STAGE_STARTED
+    expect(sc.lastArtifact).toBe("components.md"); // basename of latest ARTIFACT_*
+    expect(sc.recentEvents.length).toBeGreaterThanOrEqual(3); // most-recent-first stream
+    expect(sc.recentEvents[0].event).toBe("STAGE_AWAITING_APPROVAL");
+    expect(sc.recentEvents.every((e: any) => typeof e.ts === "string" && typeof e.event === "string")).toBe(true);
   });
 
   test("uninitialized workspace → initialized:false, no throw", () => {

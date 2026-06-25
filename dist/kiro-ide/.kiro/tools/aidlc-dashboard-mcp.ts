@@ -21,7 +21,8 @@
  * Project dir resolves from AIDLC_PROJECT_DIR or process.cwd().
  */
 
-import { readStateFile, getField, parseCheckboxes, loadStageGraph } from "./aidlc-lib.ts";
+import { readStateFile, getField, parseCheckboxes, loadStageGraph, auditFilePath } from "./aidlc-lib.ts";
+import { readFileSync } from "node:fs";
 
 const UI_URI = "ui://aidlc/panel";
 const MCP_UI_MIME = "text/html;profile=mcp-app";
@@ -32,6 +33,14 @@ const MCP_UI_MIME = "text/html;profile=mcp-app";
 // graph can't be read.
 const FALLBACK_PHASES = ["Initialization", "Ideation", "Inception", "Construction", "Operation"];
 const titleCase = (p: string) => (p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : p);
+
+// Realistic, slug-derived "danger edge": stages that perform irreversible work.
+// touches-cloud = real AWS/deploy/provision (Bash); writes-code = generates/builds source.
+function stageRisk(slug: string): "" | "writes-code" | "touches-cloud" {
+  if (/deployment|environment-provisioning|ci-pipeline|infrastructure/.test(slug)) return "touches-cloud";
+  if (/code-generation|build-and-test/.test(slug)) return "writes-code";
+  return "";
+}
 function discoverPhases(graph: ReturnType<typeof loadStageGraph>): string[] {
   const seen: string[] = [];
   for (const n of graph) {
@@ -39,6 +48,14 @@ function discoverPhases(graph: ReturnType<typeof loadStageGraph>): string[] {
     if (p && !seen.includes(p)) seen.push(p);
   }
   return seen.length ? seen : FALLBACK_PHASES;
+}
+
+export interface AuditEvent {
+  ts: string; // ISO timestamp
+  event: string; // taxonomy name, e.g. STAGE_STARTED
+  stage?: string;
+  agent?: string;
+  detail?: string; // best human-readable field for this event
 }
 
 export interface DashboardState {
@@ -59,7 +76,12 @@ export interface DashboardState {
     requires_stage: string[];
     produces: string[];
     consumes: string[];
+    risk: "" | "writes-code" | "touches-cloud";
   }[];
+  // ── presence layer, joined from audit.md (the "now" fuel) ──
+  activeAgent: string; // agent that started the current stage (from STAGE_STARTED)
+  recentEvents: AuditEvent[]; // most-recent-first, capped
+  lastArtifact: string; // file path of the most recent ARTIFACT_CREATED/UPDATED
 }
 
 const EMPTY: DashboardState = {
@@ -71,9 +93,46 @@ const EMPTY: DashboardState = {
   nextStage: "",
   phases: FALLBACK_PHASES.map((name) => ({ name, status: "Pending" })),
   stages: [],
+  activeAgent: "",
+  recentEvents: [],
+  lastArtifact: "",
 };
 
-/** Compose existing aidlc-lib helpers — NO new state logic (AD2). */
+/** Parse audit.md (markdown blocks separated by `---`, each with `**Field**: value`
+ * lines) into a flat, most-recent-first event list. Read-only, best-effort. */
+const AUDIT_DETAIL_FIELDS = ["Details", "Message", "Artifacts", "Reason", "Feedback", "File", "Request", "Verdict"];
+function readAuditEvents(projectDir: string, cap = 8): AuditEvent[] {
+  let raw: string;
+  try {
+    raw = readFileSync(auditFilePath(projectDir), "utf-8");
+  } catch {
+    return [];
+  }
+  const blocks = raw.split(/\n---\n/);
+  const events: AuditEvent[] = [];
+  for (const b of blocks) {
+    const field = (name: string): string | undefined => {
+      const m = b.match(new RegExp(`\\*\\*${name}\\*\\*:\\s*(.+)`));
+      return m ? m[1].trim() : undefined;
+    };
+    const event = field("Event");
+    const ts = field("Timestamp");
+    if (!event || !ts) continue;
+    let detail: string | undefined;
+    for (const f of AUDIT_DETAIL_FIELDS) {
+      const v = field(f);
+      if (v) {
+        detail = v;
+        break;
+      }
+    }
+    events.push({ ts, event, stage: field("Stage"), agent: field("Agent"), detail });
+  }
+  // file is chronological; reverse for most-recent-first, then cap
+  return events.reverse().slice(0, cap);
+}
+
+/** Compose existing aidlc-lib helpers + join audit.md for the presence layer. */
 export function readDashboardState(projectDir: string): DashboardState {
   let content: string;
   try {
@@ -105,6 +164,7 @@ export function readDashboardState(projectDir: string): DashboardState {
       requires_stage: node?.requires_stage ?? [],
       produces: node?.produces ?? [],
       consumes: (node?.consumes ?? []).map((x) => x.artifact),
+      risk: stageRisk(c.slug),
     };
   });
 
@@ -124,15 +184,30 @@ export function readDashboardState(projectDir: string): DashboardState {
     return "Pending";
   };
 
+  const currentStage = getField(content, "Current Stage") ?? "";
+  // Read a deep window for lookups (agent/artifact can be older than the display cap),
+  // but only surface a small recent slice in the UI stream.
+  const allEvents = readAuditEvents(projectDir, 200);
+  const recentEvents = allEvents.slice(0, 8);
+  // active agent = the Agent on the most recent STAGE_STARTED for the current stage
+  const startedCur = allEvents.find((e) => e.event === "STAGE_STARTED" && e.stage === currentStage && e.agent);
+  const activeAgent = startedCur?.agent ?? allEvents.find((e) => e.event === "STAGE_STARTED" && e.agent)?.agent ?? "";
+  // last artifact = most recent ARTIFACT_* event (basename only, not the full path)
+  const lastArtifactRaw = allEvents.find((e) => e.event.startsWith("ARTIFACT_"))?.detail ?? "";
+  const lastArtifact = lastArtifactRaw.split("/").pop() ?? "";
+
   return {
     initialized: true,
     project: getField(content, "Project") ?? "",
     phase: getField(content, "Lifecycle Phase") ?? "",
-    currentStage: getField(content, "Current Stage") ?? "",
+    currentStage,
     status: getField(content, "Status") ?? "",
     nextStage: getField(content, "Next Stage") ?? "",
     phases: phases.map((name) => ({ name, status: phaseStatus(name) })),
     stages,
+    activeAgent,
+    recentEvents,
+    lastArtifact,
   };
 }
 

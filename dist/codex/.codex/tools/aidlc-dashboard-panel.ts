@@ -71,7 +71,21 @@ body{background:var(--paper);color:var(--ink);font:13px/1.5 var(--font);
 .now .stg{font-size:clamp(18px,3.4vw,28px);font-weight:800;letter-spacing:-.02em;line-height:1.05;margin-top:3px}
 .now .meta{font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
 .now .meta b{color:var(--ink-2);font-weight:600}
-.now .meta .gated{color:var(--gate)}
+.now .ph .who{color:var(--ink-2)}
+.now .just{font-size:10px;font-weight:600;letter-spacing:.04em;color:var(--active);margin-top:5px}
+.now .risk{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:6px;
+  display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px}
+.now .risk.touches-cloud{color:var(--gate);background:color-mix(in oklab,var(--gate) 14%,transparent)}
+.now .risk.writes-code{color:var(--ink-2);background:var(--hair-soft)}
+.now .just code{font-family:var(--mono);font-size:10px;color:var(--ink-2);background:var(--hair-soft);padding:1px 5px;border-radius:4px;letter-spacing:0}
+/* "your move" — the loudest state */
+.now .cue{font-size:10px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--gate);
+  display:inline-flex;align-items:center;gap:6px;animation:cuePulse 2.4s ease-in-out infinite}
+@keyframes cuePulse{0%,100%{opacity:.7}50%{opacity:1}}
+.now.waiting{border-left:2px solid var(--gate);padding-left:16px;margin-left:2px}
+.now.waiting .stg{color:var(--ink)}
+.now .approving{font-size:10px;font-weight:600;letter-spacing:.04em;color:var(--ink-3);margin-top:7px;text-transform:none}
+.now .approving code{font-family:var(--mono);font-size:9.5px;color:var(--ink-2);background:var(--hair-soft);padding:1px 6px;border-radius:5px;margin-right:4px}
 
 /* the fit-to-frame canvas */
 .canvas{position:relative;z-index:1;flex:1 1 auto;min-height:0;overflow:hidden;padding:0 14px 12px}
@@ -97,6 +111,16 @@ body{background:var(--paper);color:var(--ink);font:13px/1.5 var(--font);
 @keyframes pulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.25);opacity:1}}
 .empty{position:relative;z-index:1;margin:auto;color:var(--ink-3);font-size:12px;font-weight:600;
   letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:48px 24px}
+/* activity stream — a quiet momentum ticker, progressively disclosed */
+.stream{position:relative;z-index:1;flex:0 0 auto;padding:8px 18px 12px;display:flex;gap:14px;align-items:center;
+  border-top:1px solid var(--hair-soft);overflow:hidden;white-space:nowrap;font-size:9.5px;letter-spacing:.04em}
+.stream .ev{display:inline-flex;align-items:center;gap:6px;color:var(--ink-3);flex:0 0 auto}
+.stream .ev:first-child{color:var(--ink-2)}
+.stream .ev .k{font-family:var(--mono);font-size:8.5px;color:var(--ink-3);opacity:.7}
+.stream .ev .dotmark{width:5px;height:5px;border-radius:50%;background:var(--ink-3)}
+.stream .ev.ok .dotmark{background:var(--active)} .stream .ev.act .dotmark{background:var(--accent)}
+.stream .ev.gate .dotmark{background:var(--gate)} .stream .ev.warn .dotmark{background:var(--gate)}
+.stream:empty{display:none}
 .detail{position:absolute;z-index:2;pointer-events:none;background:var(--raised);border:1px solid var(--hair);
   border-radius:8px;padding:7px 10px;font:600 9px var(--mono);letter-spacing:.04em;color:var(--ink-2);
   box-shadow:0 8px 24px rgba(0,0,0,.28);opacity:0;transition:opacity .12s var(--ease);max-width:220px}
@@ -114,6 +138,7 @@ const BODY = `
 </div>
 <div class="now" id="now"></div>
 <div class="canvas" id="canvas"><div class="empty" id="empty" hidden>workflow not initialized</div></div>
+<div class="stream" id="stream"></div>
 <div class="detail" id="detail"></div>`;
 
 const SCRIPT = `
@@ -122,6 +147,8 @@ const SCRIPT = `
   var SVGNS="http://www.w3.org/2000/svg";
   var GLY={completed:"\\u2713","awaiting-approval":"!","revising":"\\u21ba"};
   function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
+  function prettyAgent(a){ if(!a)return ""; if(a==="orchestrator")return "Orchestrator";
+    return a.replace(/^aidlc-/,"").replace(/-agent$/,"").split("-").map(function(w){return w.charAt(0).toUpperCase()+w.slice(1);}).join(" "); }
   function el(n,a){var e=document.createElementNS(SVGNS,n);for(var k in (a||{}))e.setAttribute(k,a[k]);return e;}
   function cssv(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()||v;}
 
@@ -173,7 +200,9 @@ const SCRIPT = `
     empty.hidden=true;
 
     var phases=(d.phases||[]).map(function(p){return p.name;}); // DISCOVERED, not hard-coded
-    var cur=(d.stages||[]).filter(function(s){return s.state==="in-progress"||s.state==="awaiting-approval";})[0];
+    // focal stage: an open gate (your move) takes priority over an in-progress stage.
+    var cur=(d.stages||[]).filter(function(s){return s.state==="awaiting-approval";})[0]
+          ||(d.stages||[]).filter(function(s){return s.state==="in-progress"||s.state==="revising";})[0];
     var nextNode=(d.stages||[]).filter(function(s){return s.slug===d.nextStage;})[0];
     var aw=(d.stages||[]).filter(function(s){return s.state==="awaiting-approval";})[0];
 
@@ -181,11 +210,28 @@ const SCRIPT = `
     document.getElementById("ghost").textContent=(d.phase||"").slice(0,4).toUpperCase();
     var done=(d.stages||[]).filter(function(s){return s.state==="completed";}).length;
     var total=(d.stages||[]).filter(function(s){return s.state!=="skipped";}).length;
-    document.getElementById("now").innerHTML=
-      '<div class="ph">'+esc(d.phase||"")+'</div>'+
-      '<div class="stg">'+esc((cur&&cur.name)||d.currentStage||"\\u2014")+'</div>'+
-      '<div class="meta">'+(aw?'<span class="gated">\\u25c6 awaiting approval</span>':'<b>'+esc(d.status||"")+'</b>')+
-        ' \\u00b7 '+done+'/'+total+' done \\u00b7 next: '+esc((nextNode&&nextNode.name)||d.nextStage||"\\u2014")+'</div>';
+    var agent=prettyAgent(d.activeAgent);
+    var nowEl=document.getElementById("now");
+    nowEl.classList.toggle("waiting", !!aw);
+    if(aw){
+      // #1 question, answered loudly: it's YOUR move. Show what you're approving.
+      var arts=(aw.produces||[]).slice(0,4);
+      nowEl.innerHTML=
+        '<div class="cue">\\u25c6 your move</div>'+
+        '<div class="stg">'+esc(aw.name||aw.slug)+'</div>'+
+        '<div class="meta">review &amp; approve to continue'+(agent?' \\u00b7 by '+esc(agent):'')+
+          ' \\u00b7 '+done+'/'+total+' done</div>'+
+        (arts.length?'<div class="approving">approving: '+arts.map(function(a){return '<code>'+esc(a)+'</code>';}).join(" ")+'</div>':'');
+    } else {
+      // AI working: show who + what, calmly, so the user can walk away.
+      nowEl.innerHTML=
+        '<div class="ph">'+esc(d.phase||"")+(agent?' \\u00b7 <span class="who">'+esc(agent)+'</span>':'')+'</div>'+
+        '<div class="stg">'+esc((cur&&cur.name)||d.currentStage||"\\u2014")+'</div>'+
+        '<div class="meta"><b>'+esc(d.status||"working")+'</b> \\u00b7 '+done+'/'+total+' done \\u00b7 next: '+
+          esc((nextNode&&nextNode.name)||d.nextStage||"\\u2014")+'</div>'+
+        (cur&&cur.risk?'<div class="risk '+cur.risk+'">'+(cur.risk==="touches-cloud"?"\\u26a1 touching live AWS \\u2014 irreversible":"\\u270e writing code")+'</div>':'')+
+        (d.lastArtifact?'<div class="just">\\u2713 just wrote <code>'+esc(d.lastArtifact)+'</code></div>':'');
+    }
 
     var stages=(d.stages||[]).filter(function(s){return showAll||s.state!=="skipped";});
     var byPhase={};phases.forEach(function(p){byPhase[p]=[];});
@@ -274,11 +320,12 @@ const SCRIPT = `
       svg.appendChild(g);
     });
 
-    // halo gradient def
+    // halo gradient def — gate-orange when waiting on the user, green when AI is working
+    var haloColor = (cur && cur.state==="awaiting-approval") ? cssv("--gate") : cssv("--active");
     var defs=el("defs",{});
     var rg=el("radialGradient",{id:"haloGrad"});
-    rg.appendChild(el("stop",{offset:"0%","stop-color":cssv("--active"),"stop-opacity":"0.32"}));
-    rg.appendChild(el("stop",{offset:"70%","stop-color":cssv("--active"),"stop-opacity":"0"}));
+    rg.appendChild(el("stop",{offset:"0%","stop-color":haloColor,"stop-opacity":"0.34"}));
+    rg.appendChild(el("stop",{offset:"70%","stop-color":haloColor,"stop-opacity":"0"}));
     defs.appendChild(rg); svg.insertBefore(defs,svg.firstChild);
 
     var old=canvas.querySelector("svg"); if(old)old.remove();
@@ -291,6 +338,27 @@ const SCRIPT = `
     if(scale < 0.6){ canvas.classList.add("scrollable"); svg.setAttribute("width",W); svg.setAttribute("height",H);
       if(curSlug&&pos[curSlug]){ /* one-time center, only when scrollable */ }
     } else { canvas.classList.remove("scrollable"); svg.removeAttribute("width"); svg.removeAttribute("height"); }
+
+    renderStream(d.recentEvents||[]);
+  }
+
+  // momentum ticker — last few audit events, quiet, most-recent-first, progressively disclosed
+  function renderStream(events){
+    var labels={STAGE_STARTED:["started","act"],STAGE_COMPLETED:["done","ok"],GATE_APPROVED:["approved","ok"],
+      STAGE_AWAITING_APPROVAL:["gate opened","gate"],STAGE_REVISING:["revising","warn"],ARTIFACT_CREATED:["wrote","ok"],
+      ARTIFACT_UPDATED:["updated","ok"],SUBAGENT_COMPLETED:["reviewed","act"],RULE_LEARNED:["learned","act"],
+      SENSOR_FAILED:["check failed","warn"],PHASE_COMPLETED:["phase done","ok"],PHASE_VERIFIED:["phase verified","ok"],
+      STAGE_SKIPPED:["skipped","none"],STAGE_JUMPED:["jumped","act"]};
+    function pretty(slug){return slug?slug.replace(/-/g," "):"";}
+    // keep only meaningful workflow events; drop session/sensor/infra noise from the stream.
+    var shown=(events||[]).filter(function(e){return labels[e.event];}).slice(0,4);
+    var html=shown.map(function(e){
+      var L=labels[e.event];
+      var what=pretty(e.stage)|| (e.detail||"").split("/").pop() || "";
+      if(what.length>22)what=what.slice(0,21)+"\\u2026";
+      return '<span class="ev '+L[1]+'"><span class="dotmark"></span><span class="k">'+esc(L[0])+'</span> '+esc(what)+'</span>';
+    }).join("");
+    document.getElementById("stream").innerHTML=html;
   }
 
   function showDetail(s,cx,cy){
