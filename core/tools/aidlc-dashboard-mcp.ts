@@ -154,9 +154,12 @@ export function readDashboardState(projectDir: string): DashboardState {
 
   const stages = parseCheckboxes(content).map((c) => {
     const node = bySlug.get(c.slug);
+    // A stage marked "— SKIP…" in its suffix is skipped even if its checkbox is
+    // still [ ] (the engine records the skip in the suffix before re-marking [S]).
+    const state = /^SKIP/i.test((c.suffix ?? "").trim()) ? "skipped" : c.state;
     return {
       slug: c.slug,
-      state: c.state,
+      state,
       suffix: c.suffix,
       number: node?.number ?? "",
       name: node?.name ?? c.slug,
@@ -176,11 +179,14 @@ export function readDashboardState(projectDir: string): DashboardState {
   const phaseStatus = (name: string): string => {
     const inPhase = stages.filter((s) => s.phase === name);
     if (inPhase.length === 0) return "Pending";
-    const hasCurrent = inPhase.some((s) => s.state === "in-progress" || s.state === "awaiting-approval" || s.state === "revising");
-    const allSettled = inPhase.every((s) => s.state === "completed" || s.state === "skipped");
+    // a phase whose every stage is skipped is itself Skipped (scope excluded it)
+    if (inPhase.every((s) => s.state === "skipped")) return "Skipped";
+    const inScope = inPhase.filter((s) => s.state !== "skipped");
+    const hasCurrent = inScope.some((s) => s.state === "in-progress" || s.state === "awaiting-approval" || s.state === "revising");
+    const allSettled = inScope.every((s) => s.state === "completed");
     const isLifecycle = name.toUpperCase() === lifecyclePhase;
     if (hasCurrent || isLifecycle) return "Active";
-    if (allSettled) return "Verified";
+    if (allSettled && inScope.length > 0) return "Verified";
     return "Pending";
   };
 

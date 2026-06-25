@@ -231,22 +231,24 @@ describe("AC2 — panel reads host theme + self-themes with the Codex palette", 
     expect(PANEL_HTML).toContain('data-theme');
   });
 
-  test("panel is a flow diagram with a fullscreen toggle bridge", async () => {
+  test("panel is a linear board (no node-graph connectors), gate is the protagonist", async () => {
     const { PANEL_HTML } = await import(PANEL);
-    expect(PANEL_HTML).toContain("requestDisplayMode"); // expand → fullscreen
-    expect(PANEL_HTML).toContain("toggleMode"); // and collapse back to inline
-    expect(PANEL_HTML).toContain("requires_stage"); // draws dependency edges
     expect(PANEL_HTML).toContain("AI-DLC"); // in-panel wordmark (correct title)
+    // it's a status board: phase rows + stage pills, NOT a node graph with edges
+    expect(PANEL_HTML).toContain("class=\"banner"); // the "what's blocking?" hero banner
+    expect(PANEL_HTML).toContain("approve"); // the gate is surfaced as an approve action
+    // no curved connector lines / SVG path edges in the board design
+    expect(PANEL_HTML).not.toContain("requires_stage");
+    expect(PANEL_HTML).not.toContain("preserveAspectRatio");
   });
 
-  test("panel discovers phases from data and is space-aware + live-updating", async () => {
+  test("panel discovers phases from data, hides skipped phases, and live-updates", async () => {
     const { PANEL_HTML } = await import(PANEL);
     // phases come from the data (d.phases), NOT a hard-coded list in the panel
     expect(PANEL_HTML).toContain("d.phases");
     expect(/var PHASES\s*=\s*\[/.test(PANEL_HTML)).toBe(false);
-    // fit-to-frame: reads the host container size and scales (preserveAspectRatio)
-    expect(PANEL_HTML).toContain("preserveAspectRatio");
-    expect(PANEL_HTML).toContain("Host.maxW");
+    // scope-shaped: a skipped phase is not rendered at all
+    expect(PANEL_HTML).toContain('"Skipped"');
     // self-polls so it reflects aidlc-state.md changes without a manual tool call
     expect(PANEL_HTML).toContain("callServerTool");
     expect(PANEL_HTML).toContain("setInterval");

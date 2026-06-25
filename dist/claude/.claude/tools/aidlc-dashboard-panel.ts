@@ -3,383 +3,216 @@
  *
  * Served by aidlc-dashboard-mcp.ts at `ui://aidlc/panel` (MIME text/html;profile=mcp-app).
  *
- * An editorial-schematic lifecycle map: phases are discovered from the data (NOT
- * hard-coded), drawn as a journey of dot+halo stage nodes connected by dotted
- * hairline rails. One rationed accent; the single active stage pulses. The whole
- * diagram is fit-to-frame (viewBox + preserveAspectRatio, scaled to the host's
- * container) so it always shows in full, edge/space-aware, at any canvas size.
+ * A LINEAR status board (Linear/Jira sensibility), not a node graph. Position +
+ * state-colour convey the pipeline — there are NO connector lines. It shows only
+ * the phases this run actually reaches (scope-shaped): a skipped/un-reached phase
+ * is hidden, not drawn as dead cells. The protagonist is the single "what's
+ * blocking?" signal — is the AI working, or is it waiting on YOU.
  *
- * No build step: hand-authored HTML string. The host bridge is a vendored
- * (dependency-free) MCP-Apps protocol impl — reads theme/styleVariables/displayMode/
- * containerDimensions, receives tool results, toggles fullscreen↔inline, and
- * self-polls the tool so it reflects aidlc-state.md changes live.
+ * Per-run truth comes from the state file + audit.md (joined by the server).
+ * Self-themed (host tokens applied if present). No build step; the host bridge
+ * is a vendored MCP-Apps protocol impl.
  */
 
 const STYLE = `
 *{box-sizing:border-box}
 :root{
-  /* deliberate "warm graphite" surface — not the generic flat #181818 void */
-  --paper:#15161a; --panel:#1b1d22; --raised:#24262c;
-  --ink:#f4f2ee; --ink-2:rgba(244,242,238,.66); --ink-3:rgba(244,242,238,.40);
-  --hair:rgba(244,242,238,.10); --hair-soft:rgba(244,242,238,.05);
-  /* ONE rationed accent, used at many opacities */
-  --accent:#ff7a2f; --accent-deep:#ff9354;
-  --active:#3ecf8e; --active-glow:rgba(62,207,142,.5);
-  --gate:#ffb454;
+  --bg:#0c0d11; --row:#111217; --chip:#14161d; --chip-hover:#191c25;
+  --fg:#e9eaf0; --fg-2:#9aa0b0; --fg-3:#6b7185;
+  --line:#1f2230; --line-2:#2a2e3f;
+  --accent:#5b6cff; --accent-soft:rgba(91,108,255,.16);
+  --done:#3ecf8e; --done-soft:rgba(62,207,142,.14);
+  --gate:#f5b542; --gate-soft:rgba(245,181,66,.16);
+  --rev:#c79bff;
   --font:var(--vscode-font-family,-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif);
-  --mono:var(--vscode-editor-font-family,ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace);
-  --ease:cubic-bezier(.4,0,.2,1); --ease-decel:cubic-bezier(.16,1,.3,1);
+  --mono:var(--vscode-editor-font-family,ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace);
+  --ease:cubic-bezier(.4,0,.2,1);
 }
 :root[data-theme="light"]{
-  --paper:#f5f3ef; --panel:#fbfaf8; --raised:#fff;
-  --ink:#161d26; --ink-2:rgba(22,29,38,.66); --ink-3:rgba(22,29,38,.42);
-  --hair:rgba(22,29,38,.10); --hair-soft:rgba(22,29,38,.06);
-  --accent:#ff6200; --accent-deep:#c2410c; --active:#047857; --active-glow:rgba(16,185,129,.45); --gate:#e2820a;
+  --bg:#fbfbfc; --row:#fff; --chip:#fff; --chip-hover:#f5f6f9;
+  --fg:#16181d; --fg-2:#5b616a; --fg-3:#8b909c;
+  --line:#e7e8ee; --line-2:#d8dae3;
+  --accent:#4856e6; --accent-soft:rgba(72,86,230,.1);
+  --done:#0a9d63; --done-soft:rgba(10,157,99,.1);
+  --gate:#c77d10; --gate-soft:rgba(199,125,16,.12); --rev:#7c3aed;
 }
-@media (prefers-color-scheme: light){
-  :root:not([data-theme="dark"]){
-    --paper:#f5f3ef; --panel:#fbfaf8; --raised:#fff;
-    --ink:#161d26; --ink-2:rgba(22,29,38,.66); --ink-3:rgba(22,29,38,.42);
-    --hair:rgba(22,29,38,.10); --hair-soft:rgba(22,29,38,.06);
-    --accent:#ff6200; --accent-deep:#c2410c; --active:#047857; --active-glow:rgba(16,185,129,.45); --gate:#e2820a;
-  }
-}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
+  --bg:#fbfbfc; --row:#fff; --chip:#fff; --chip-hover:#f5f6f9;
+  --fg:#16181d; --fg-2:#5b616a; --fg-3:#8b909c; --line:#e7e8ee; --line-2:#d8dae3;
+  --accent:#4856e6; --accent-soft:rgba(72,86,230,.1); --done:#0a9d63; --done-soft:rgba(10,157,99,.1);
+  --gate:#c77d10; --gate-soft:rgba(199,125,16,.12); --rev:#7c3aed;
+}}
 html,body{margin:0;height:100%}
-body{background:var(--paper);color:var(--ink);font:13px/1.5 var(--font);
-  -webkit-font-smoothing:antialiased;letter-spacing:-.1px;
-  display:flex;flex-direction:column;height:100vh;overflow:hidden;position:relative}
+body{background:var(--bg);color:var(--fg);font:13px/1.45 var(--font);letter-spacing:-.01em;
+  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;
+  display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
-/* ghost background glyph — depth without clutter */
-.ghost{position:absolute;right:-2%;top:-6%;font:800 30vh/1 var(--font);color:var(--ink);
-  opacity:.035;letter-spacing:-.04em;pointer-events:none;user-select:none;font-variant-numeric:tabular-nums;z-index:0}
+/* header */
+.hd{display:flex;align-items:center;gap:8px;padding:14px 18px 0}
+.mark{width:15px;height:15px;color:var(--fg-2);flex:0 0 15px}
+.brand{font-size:12.5px;font-weight:600;letter-spacing:.01em}
+.hd .sp{flex:1}
+.proj{font-size:11px;color:var(--fg-3);font-weight:500;max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-.bar{position:relative;z-index:1;display:flex;align-items:center;gap:9px;padding:14px 18px 8px;flex:0 0 auto}
-.mark{width:15px;height:15px;color:var(--accent);flex:0 0 15px}
-.wordmark{font-size:12px;font-weight:700;letter-spacing:.04em}
-.wordmark .dim{color:var(--ink-3);font-weight:500}
-.bar .sp{flex:1}
-.ctl{appearance:none;border:none;background:transparent;color:var(--ink-3);font:600 10px var(--font);
-  letter-spacing:.12em;text-transform:uppercase;padding:5px 8px;cursor:pointer;border-radius:6px;
-  transition:color .15s var(--ease),background-color .15s var(--ease)}
-.ctl:hover{color:var(--ink);background:var(--hair-soft)}
-.ctl:focus-visible{outline:none;box-shadow:0 0 0 1px var(--accent)}
-.ctl.on{color:var(--accent)}
+/* status banner — the protagonist */
+.banner{margin:12px 18px 2px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--row);
+  display:flex;align-items:center;gap:12px}
+.banner.gate{border-color:var(--gate);background:var(--gate-soft)}
+.banner .icon{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;background:var(--accent-soft);color:var(--accent)}
+.banner.gate .icon{background:var(--gate);color:#1a1206}
+.banner.done .icon{background:var(--done-soft);color:var(--done)}
+.banner .txt{min-width:0;flex:1}
+.banner .lead{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3)}
+.banner.gate .lead{color:var(--gate)}
+.banner .what{font-size:15px;font-weight:650;letter-spacing:-.02em;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.banner .sub{font-size:11px;color:var(--fg-2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.banner .sub code{font-family:var(--mono);font-size:10.5px;color:var(--fg-2)}
 
-/* now strip: giant stage name vs tiny tracked meta */
-.now{position:relative;z-index:1;flex:0 0 auto;padding:2px 18px 14px}
-.now .ph{font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent)}
-.now .stg{font-size:clamp(18px,3.4vw,28px);font-weight:800;letter-spacing:-.02em;line-height:1.05;margin-top:3px}
-.now .meta{font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
-.now .meta b{color:var(--ink-2);font-weight:600}
-.now .ph .who{color:var(--ink-2)}
-.now .just{font-size:10px;font-weight:600;letter-spacing:.04em;color:var(--active);margin-top:5px}
-.now .risk{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:6px;
-  display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px}
-.now .risk.touches-cloud{color:var(--gate);background:color-mix(in oklab,var(--gate) 14%,transparent)}
-.now .risk.writes-code{color:var(--ink-2);background:var(--hair-soft)}
-.now .just code{font-family:var(--mono);font-size:10px;color:var(--ink-2);background:var(--hair-soft);padding:1px 5px;border-radius:4px;letter-spacing:0}
-/* "your move" — the loudest state */
-.now .cue{font-size:10px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--gate);
-  display:inline-flex;align-items:center;gap:6px;animation:cuePulse 2.4s ease-in-out infinite}
-@keyframes cuePulse{0%,100%{opacity:.7}50%{opacity:1}}
-.now.waiting{border-left:2px solid var(--gate);padding-left:16px;margin-left:2px}
-.now.waiting .stg{color:var(--ink)}
-.now .approving{font-size:10px;font-weight:600;letter-spacing:.04em;color:var(--ink-3);margin-top:7px;text-transform:none}
-.now .approving code{font-family:var(--mono);font-size:9.5px;color:var(--ink-2);background:var(--hair-soft);padding:1px 6px;border-radius:5px;margin-right:4px}
+/* phase rows */
+.board{flex:1 1 auto;min-height:0;overflow-y:auto;padding:6px 18px 16px}
+.phase{padding:11px 0;border-bottom:1px solid var(--line)}
+.phase:last-child{border-bottom:0}
+.phrow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.phdot{width:8px;height:8px;border-radius:50%;background:var(--fg-3);flex:0 0 8px}
+.phase.active .phdot{background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.phase.verified .phdot{background:var(--done)}
+.phname{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-2)}
+.phase.active .phname{color:var(--fg)}
+.phcount{margin-left:auto;font-size:10.5px;color:var(--fg-3)}
+.phase.verified .phcount{color:var(--done)}
 
-/* the fit-to-frame canvas */
-.canvas{position:relative;z-index:1;flex:1 1 auto;min-height:0;overflow:hidden;padding:0 14px 12px}
-.canvas.scrollable{overflow:auto}
-.canvas svg{display:block;width:100%;height:100%}
-.canvas.scrollable svg{width:auto;height:auto}
+/* stage rail — pills, no connectors */
+.rail{display:flex;flex-wrap:wrap;gap:6px;padding-left:16px}
+.pill{display:inline-flex;align-items:center;gap:7px;max-width:100%;
+  border:1px solid var(--line);background:var(--chip);border-radius:8px;padding:6px 11px 6px 9px;
+  transition:border-color .12s var(--ease),background .12s var(--ease)}
+.pill .dot{width:7px;height:7px;border-radius:50%;flex:0 0 7px;border:1.5px solid var(--fg-3);background:transparent}
+.pill .nm{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill .num{font-family:var(--mono);font-size:9.5px;color:var(--fg-3);flex:0 0 auto}
+.pill.completed{opacity:.55}
+.pill.completed .dot{background:var(--done);border-color:var(--done)}
+.pill.completed:hover{opacity:1}
+.pill.in-progress{border-color:var(--accent);background:var(--accent-soft)}
+.pill.in-progress .dot{background:var(--accent);border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.pill.in-progress .nm{font-weight:600}
+.pill.awaiting-approval{border-color:var(--gate);background:var(--gate-soft)}
+.pill.awaiting-approval .dot{background:var(--gate);border-color:var(--gate)}
+.pill.awaiting-approval .nm{font-weight:600}
+.pill.revising{border-color:var(--rev)}.pill.revising .dot{background:var(--rev);border-color:var(--rev);animation:pulse 2.4s ease-in-out infinite}
+.pill.pending{opacity:.85}
+.tag{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:999px;flex:0 0 auto}
+.tag.gate{background:var(--gate);color:#1a1206}
+.tag.now{background:var(--accent);color:#fff}
+@keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
 
-/* schematic rail + nodes */
-.rail{fill:none;stroke:var(--ink-3);stroke-width:1;stroke-dasharray:2 7;stroke-linecap:round;opacity:.5}
-.edge{fill:none;stroke:var(--ink-3);stroke-width:1;stroke-dasharray:2 6;stroke-linecap:round;opacity:.38;
-  transition:opacity .3s var(--ease),stroke .3s var(--ease)}
-.edge.cur{stroke:var(--accent);opacity:.9;stroke-dasharray:none;stroke-width:1.4}
-.edge.dim{opacity:.12}
-.phase-label{font:700 10px var(--font);letter-spacing:.2em;text-transform:uppercase;fill:var(--ink-3)}
-.tick{stroke:var(--hair);stroke-width:1}
-.halo{opacity:0}
-.node .dot{transition:r .2s var(--ease)}
-.node .nm{font:700 8.5px var(--font);letter-spacing:.12em;text-transform:uppercase;fill:var(--ink-2)}
-.node .num{font:600 7.5px var(--mono);fill:var(--ink-3)}
-.node.cur .nm{fill:var(--ink)}
-.node.skip .nm{fill:var(--ink-3);text-decoration:line-through}
-.node.active-pulse .halo{opacity:1;animation:pulse 3.6s ease-in-out infinite}
-@keyframes pulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.25);opacity:1}}
-.empty{position:relative;z-index:1;margin:auto;color:var(--ink-3);font-size:12px;font-weight:600;
-  letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:48px 24px}
-/* activity stream — a quiet momentum ticker, progressively disclosed */
-.stream{position:relative;z-index:1;flex:0 0 auto;padding:8px 18px 12px;display:flex;gap:14px;align-items:center;
-  border-top:1px solid var(--hair-soft);overflow:hidden;white-space:nowrap;font-size:9.5px;letter-spacing:.04em}
-.stream .ev{display:inline-flex;align-items:center;gap:6px;color:var(--ink-3);flex:0 0 auto}
-.stream .ev:first-child{color:var(--ink-2)}
-.stream .ev .k{font-family:var(--mono);font-size:8.5px;color:var(--ink-3);opacity:.7}
-.stream .ev .dotmark{width:5px;height:5px;border-radius:50%;background:var(--ink-3)}
-.stream .ev.ok .dotmark{background:var(--active)} .stream .ev.act .dotmark{background:var(--accent)}
-.stream .ev.gate .dotmark{background:var(--gate)} .stream .ev.warn .dotmark{background:var(--gate)}
-.stream:empty{display:none}
-.detail{position:absolute;z-index:2;pointer-events:none;background:var(--raised);border:1px solid var(--hair);
-  border-radius:8px;padding:7px 10px;font:600 9px var(--mono);letter-spacing:.04em;color:var(--ink-2);
-  box-shadow:0 8px 24px rgba(0,0,0,.28);opacity:0;transition:opacity .12s var(--ease);max-width:220px}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* collapsed (verified) phase: just a summary line, no pills */
+.phase.collapsed .rail{display:none}
+/* skipped phases: not rendered at all */
+
+.empty{margin:auto;color:var(--fg-3);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:48px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 `;
 
 const BODY = `
-<div class="ghost" id="ghost"></div>
-<div class="bar">
+<div class="hd">
   <svg class="mark" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M22.356 19.797H17.17M9.662 12.29l1.979 3.576a.511.511 0 0 1-.005.504l-1.974 3.409M30.758 16c0 8.15-6.607 14.758-14.758 14.758-8.15 0-14.758-6.607-14.758-14.758C1.242 7.85 7.85 1.242 16 1.242c8.15 0 14.758 6.608 14.758 14.758Z" stroke="currentColor" stroke-linecap="round" stroke-width="2.484"/></svg>
-  <span class="wordmark">AI-DLC <span class="dim">/ lifecycle</span></span>
+  <span class="brand">AI-DLC</span>
   <span class="sp"></span>
-  <button class="ctl" id="showAll">skipped</button>
-  <button class="ctl" id="expandBtn"><span id="expandLbl">expand</span></button>
+  <span class="proj" id="proj"></span>
 </div>
-<div class="now" id="now"></div>
-<div class="canvas" id="canvas"><div class="empty" id="empty" hidden>workflow not initialized</div></div>
-<div class="stream" id="stream"></div>
-<div class="detail" id="detail"></div>`;
+<div class="banner" id="banner"></div>
+<div class="board" id="board"><div class="empty" id="empty" hidden>workflow not initialized</div></div>`;
 
 const SCRIPT = `
 (function(){
   "use strict";
-  var SVGNS="http://www.w3.org/2000/svg";
-  var GLY={completed:"\\u2713","awaiting-approval":"!","revising":"\\u21ba"};
   function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
-  function prettyAgent(a){ if(!a)return ""; if(a==="orchestrator")return "Orchestrator";
-    return a.replace(/^aidlc-/,"").replace(/-agent$/,"").split("-").map(function(w){return w.charAt(0).toUpperCase()+w.slice(1);}).join(" "); }
-  function el(n,a){var e=document.createElementNS(SVGNS,n);for(var k in (a||{}))e.setAttribute(k,a[k]);return e;}
-  function cssv(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()||v;}
+  function pretty(a){if(!a)return"";if(a==="orchestrator")return"Orchestrator";
+    return a.replace(/^aidlc-/,"").replace(/-agent$/,"").split("-").map(function(w){return w.charAt(0).toUpperCase()+w.slice(1);}).join(" ");}
 
   /* ---- vendored MCP-Apps host bridge ---- */
-  var Host={ state:null, mode:"inline", maxW:768, maxH:520 };
+  var Host={state:null,mode:"inline"};
   function applyHostContext(c){
     if(!c)return;
     if(c.displayMode)Host.mode=c.displayMode;
-    var dims=c.containerDimensions||c;
-    if(dims&&dims.maxWidth)Host.maxW=dims.maxWidth;
-    if(dims&&dims.maxHeight)Host.maxH=dims.maxHeight;
     var vars=(c.styles&&c.styles.variables)||c.styleVariables;
     if(vars){var r=document.documentElement;for(var k in vars){if(k.indexOf("--")===0)r.style.setProperty(k,vars[k]);}}
     if(c.theme&&typeof c.theme==="string")document.documentElement.setAttribute("data-theme",c.theme.indexOf("light")>=0?"light":"dark");
   }
   function api(){return window.openai||window.oai||(window.mcp&&window.mcp.app)||{};}
-  function readGlobals(){
-    var o=api();
-    Host.state=o.toolOutput||o.toolInput||o.widgetData||(o.hostContext&&o.hostContext.toolOutput)||Host.state;
-    applyHostContext(o.hostContext||o);
-  }
-  function setMode(mode){
-    var o=api();
-    try{ if(typeof o.requestDisplayMode==="function"){o.requestDisplayMode({mode:mode});} }catch(e){}
-    try{ window.parent.postMessage({type:"mcp.requestDisplayMode",mode:mode},"*"); }catch(e){}
-    try{ window.parent.postMessage({method:"requestDisplayMode",params:{mode:mode}},"*"); }catch(e){}
-    Host.mode=mode; syncExpand(); draw();
-  }
-  function toggleMode(){ setMode(Host.mode==="fullscreen"?"inline":"fullscreen"); }
-  function syncExpand(){ document.getElementById("expandLbl").textContent = Host.mode==="fullscreen"?"collapse":"expand"; }
-  // self-poll so the panel reflects aidlc-state.md changes without a manual tool call.
-  function poll(){
-    var o=api();
-    if(typeof o.callServerTool==="function"){
-      o.callServerTool({name:"aidlc_dashboard",arguments:{}}).then(function(r){
-        var sc=r&&(r.structuredContent||(r.toolResult&&r.toolResult.structuredContent));
-        if(sc){ Host.state=sc; try{o.toolOutput=sc;}catch(e){} draw(); }
-      }).catch(function(){});
-    }
-  }
+  function readGlobals(){var o=api();Host.state=o.toolOutput||o.toolInput||o.widgetData||(o.hostContext&&o.hostContext.toolOutput)||Host.state;applyHostContext(o.hostContext||o);}
+  function poll(){var o=api();if(typeof o.callServerTool==="function"){o.callServerTool({name:"aidlc_dashboard",arguments:{}}).then(function(r){var sc=r&&(r.structuredContent||(r.toolResult&&r.toolResult.structuredContent));if(sc){Host.state=sc;try{o.toolOutput=sc;}catch(e){}draw();}}).catch(function(){});}}
 
-  var showAll=false;
-
-  /* ---- the schematic lifecycle map ---- */
   function draw(){
     readGlobals();
-    var d=Host.state, empty=document.getElementById("empty"), canvas=document.getElementById("canvas");
-    if(!d||!d.initialized){empty.hidden=false;document.getElementById("now").innerHTML="";document.getElementById("ghost").textContent="";var oc=canvas.querySelector("svg");if(oc)oc.remove();return;}
+    var d=Host.state, empty=document.getElementById("empty");
+    if(!d||!d.initialized){empty.hidden=false;document.getElementById("banner").innerHTML="";document.getElementById("proj").textContent="";document.getElementById("board").querySelectorAll(".phase").forEach(function(n){n.remove();});return;}
     empty.hidden=true;
+    document.getElementById("proj").textContent=d.project||"";
 
-    var phases=(d.phases||[]).map(function(p){return p.name;}); // DISCOVERED, not hard-coded
-    // focal stage: an open gate (your move) takes priority over an in-progress stage.
-    var cur=(d.stages||[]).filter(function(s){return s.state==="awaiting-approval";})[0]
-          ||(d.stages||[]).filter(function(s){return s.state==="in-progress"||s.state==="revising";})[0];
-    var nextNode=(d.stages||[]).filter(function(s){return s.slug===d.nextStage;})[0];
-    var aw=(d.stages||[]).filter(function(s){return s.state==="awaiting-approval";})[0];
+    var stages=d.stages||[];
+    var cur=stages.filter(function(s){return s.state==="awaiting-approval";})[0]
+          ||stages.filter(function(s){return s.state==="in-progress"||s.state==="revising";})[0];
+    var agent=pretty(d.activeAgent);
+    var inScope=stages.filter(function(s){return s.state!=="skipped";});
+    var done=stages.filter(function(s){return s.state==="completed";}).length;
 
-    // now strip
-    document.getElementById("ghost").textContent=(d.phase||"").slice(0,4).toUpperCase();
-    var done=(d.stages||[]).filter(function(s){return s.state==="completed";}).length;
-    var total=(d.stages||[]).filter(function(s){return s.state!=="skipped";}).length;
-    var agent=prettyAgent(d.activeAgent);
-    var nowEl=document.getElementById("now");
-    nowEl.classList.toggle("waiting", !!aw);
-    if(aw){
-      // #1 question, answered loudly: it's YOUR move. Show what you're approving.
-      var arts=(aw.produces||[]).slice(0,4);
-      nowEl.innerHTML=
-        '<div class="cue">\\u25c6 your move</div>'+
-        '<div class="stg">'+esc(aw.name||aw.slug)+'</div>'+
-        '<div class="meta">review &amp; approve to continue'+(agent?' \\u00b7 by '+esc(agent):'')+
-          ' \\u00b7 '+done+'/'+total+' done</div>'+
-        (arts.length?'<div class="approving">approving: '+arts.map(function(a){return '<code>'+esc(a)+'</code>';}).join(" ")+'</div>':'');
+    // ── banner: the one "what's blocking?" signal ──
+    var b=document.getElementById("banner"), kind, icon, lead, what, sub;
+    var workflowDone=inScope.length>0 && done===inScope.length;
+    if(cur&&cur.state==="awaiting-approval"){
+      kind="gate"; icon="\\u25c6"; lead="needs you \\u00b7 approve to continue"; what=cur.name||cur.slug;
+      sub=(agent?"by "+esc(agent)+" \\u00b7 ":"")+esc(d.phase||"");
+    } else if(cur){
+      kind=""; icon="\\u25b6"; lead=(agent?esc(agent)+" \\u00b7 working":"working"); what=cur.name||cur.slug;
+      sub=esc(d.phase||"")+(d.lastArtifact?' \\u00b7 just wrote <code>'+esc(d.lastArtifact)+'</code>':'');
+    } else if(workflowDone){
+      kind="done"; icon="\\u2713"; lead="complete"; what="All stages approved"; sub=esc(d.phase||"");
     } else {
-      // AI working: show who + what, calmly, so the user can walk away.
-      nowEl.innerHTML=
-        '<div class="ph">'+esc(d.phase||"")+(agent?' \\u00b7 <span class="who">'+esc(agent)+'</span>':'')+'</div>'+
-        '<div class="stg">'+esc((cur&&cur.name)||d.currentStage||"\\u2014")+'</div>'+
-        '<div class="meta"><b>'+esc(d.status||"working")+'</b> \\u00b7 '+done+'/'+total+' done \\u00b7 next: '+
-          esc((nextNode&&nextNode.name)||d.nextStage||"\\u2014")+'</div>'+
-        (cur&&cur.risk?'<div class="risk '+cur.risk+'">'+(cur.risk==="touches-cloud"?"\\u26a1 touching live AWS \\u2014 irreversible":"\\u270e writing code")+'</div>':'')+
-        (d.lastArtifact?'<div class="just">\\u2713 just wrote <code>'+esc(d.lastArtifact)+'</code></div>':'');
+      kind=""; icon="\\u25b6"; lead=esc(d.status||"running"); what=(cur&&cur.name)||d.currentStage||d.phase||"\\u2014"; sub=esc(d.phase||"");
     }
+    b.className="banner "+kind;
+    b.innerHTML='<div class="icon">'+icon+'</div><div class="txt"><div class="lead">'+lead+'</div>'+
+      '<div class="what">'+esc(what)+'</div><div class="sub">'+sub+'</div></div>';
 
-    var stages=(d.stages||[]).filter(function(s){return showAll||s.state!=="skipped";});
-    var byPhase={};phases.forEach(function(p){byPhase[p]=[];});
-    stages.forEach(function(s){if(byPhase[s.phase])byPhase[s.phase].push(s);});
-    var cols=phases.filter(function(p){return byPhase[p].length>0;});
-    cols.forEach(function(p){byPhase[p].sort(function(a,b){return a.number.localeCompare(b.number,undefined,{numeric:true});});});
-
-    // content-coordinate layout; SVG scales to the frame via viewBox.
-    var COL_W=150, COL_GAP=20, ROW_H=40, PAD_T=26, PAD_L=18, DOT_X=14;
-    var pos={};
-    cols.forEach(function(p,ci){byPhase[p].forEach(function(s,ri){
-      pos[s.slug]={x:PAD_L+ci*(COL_W+COL_GAP), y:PAD_T+ri*ROW_H, col:ci, row:ri};
-    });});
-    var maxRows=Math.max.apply(null,cols.map(function(p){return byPhase[p].length;}).concat([1]));
-    var W=PAD_L+cols.length*COL_W+(cols.length-1)*COL_GAP+PAD_L;
-    var H=PAD_T+maxRows*ROW_H+10;
-    var curSlug=cur&&cur.slug;
-
-    var svg=el("svg",{viewBox:"0 0 "+W+" "+H,preserveAspectRatio:"xMidYMin meet"});
-
-    // phase column rails + labels + ticks (schematic chrome)
-    cols.forEach(function(p,ci){
-      var cx=PAD_L+ci*(COL_W+COL_GAP)+DOT_X;
-      var n=byPhase[p].length;
-      var y0=PAD_T+ROW_H/2, y1=PAD_T+(n-1)*ROW_H+ROW_H/2;
-      // vertical dotted rail through the column's dots
-      svg.appendChild(el("path",{d:"M "+cx+" "+y0+" L "+cx+" "+Math.max(y1,y0),class:"rail"}));
-      var lbl=el("text",{x:PAD_L+ci*(COL_W+COL_GAP)+DOT_X+14,y:PAD_T-12,class:"phase-label"});
-      lbl.textContent=p; svg.appendChild(lbl);
+    // ── phases: only those this run reaches (skip fully-skipped); current expanded, done collapsed ──
+    var phases=(d.phases||[]);
+    var board=document.getElementById("board");
+    board.querySelectorAll(".phase").forEach(function(n){n.remove();});
+    phases.forEach(function(p){
+      if(p.status==="Skipped")return;                 // scope excluded → don't show at all
+      var ps=stages.filter(function(s){return s.phase===p.name && s.state!=="skipped";});
+      if(ps.length===0)return;                          // nothing in-scope here → skip
+      var active=p.status==="Active", verified=p.status==="Verified";
+      // a future (pending) phase the run hasn't reached: show as a thin collapsed header only
+      var reached=active||verified||ps.some(function(s){return s.state!=="pending";});
+      ps.sort(function(a,b2){return a.number.localeCompare(b2.number,undefined,{numeric:true});});
+      var dn=ps.filter(function(s){return s.state==="completed";}).length;
+      var collapsed=verified||!reached;
+      var el=document.createElement("div");
+      el.className="phase "+(active?"active":verified?"verified":"")+(collapsed?" collapsed":"");
+      var head='<div class="phrow"><span class="phdot"></span><span class="phname">'+esc(p.name)+'</span>'+
+        '<span class="phcount">'+(verified?"\\u2713 "+dn+" done":!reached?ps.length+" stages":dn+"/"+ps.length)+'</span></div>';
+      var rail="";
+      if(!collapsed){
+        rail='<div class="rail">'+ps.map(function(s){
+          var isCur=s.state==="in-progress"||s.state==="awaiting-approval";
+          var tag=s.state==="awaiting-approval"?'<span class="tag gate">approve</span>':s.state==="in-progress"?'<span class="tag now">now</span>':"";
+          return '<span class="pill '+s.state+'"><span class="dot"></span><span class="num">'+esc(s.number)+'</span>'+
+            '<span class="nm">'+esc(s.name||s.slug)+'</span>'+tag+'</span>';
+        }).join("")+'</div>';
+      }
+      el.innerHTML=head+rail;
+      board.appendChild(el);
     });
-
-    // edges: the reference keeps connections QUIET — nodes carry the weight.
-    // We draw only the edges touching the current stage (its dependency path),
-    // plus same-column sequence bows. Everything else stays implied by the rails.
-    // This kills cross-column spaghetti while still showing the live dependency flow.
-    stages.forEach(function(s){
-      (s.requires_stage||[]).forEach(function(req){
-        var f=pos[req],t=pos[s.slug]; if(!f||!t)return;
-        var touchesCur=curSlug&&(s.slug===curSlug||req===curSlug);
-        var sameCol=f.col===t.col;
-        if(!touchesCur && !sameCol) return; // hide cross-column non-current edges
-        var fx=f.x+DOT_X, fy=f.y+ROW_H/2, tx=t.x+DOT_X, ty=t.y+ROW_H/2;
-        var cls="edge"+(touchesCur?" cur":"");
-        var dd;
-        if(sameCol){
-          var gx=fx-9;
-          dd="M "+fx+" "+fy+" C "+gx+" "+fy+", "+gx+" "+ty+", "+tx+" "+ty;
-        } else {
-          var k=26;
-          dd="M "+fx+" "+fy+" C "+(fx+k)+" "+fy+", "+(tx-k)+" "+ty+", "+tx+" "+ty;
-        }
-        svg.appendChild(el("path",{d:dd,class:cls}));
-      });
-    });
-
-    // nodes: dot + halo + tracked label (NOT boxes)
-    stages.forEach(function(s){
-      var p=pos[s.slug], st=s.state, isCur=s.slug===curSlug, done=st==="completed", gate=st==="awaiting-approval";
-      var cx=p.x+DOT_X, cy=p.y+ROW_H/2;
-      var color = gate?cssv("--gate") : isCur?cssv("--active") : done?cssv("--accent") : st==="revising"?cssv("--accent-deep") : st==="skipped"?cssv("--ink-3") : cssv("--ink-3");
-      var g=el("g",{class:"node "+st+(isCur?" cur":"")+(isCur?" active-pulse":""),"data-slug":s.slug,transform:"translate(0,0)"});
-      // halo (only meaningful on active; sized for all but invisible unless .active-pulse)
-      var halo=el("circle",{class:"halo",cx:cx,cy:cy,r:13,fill:"url(#haloGrad)"});
-      g.appendChild(halo);
-      // tick
-      g.appendChild(el("line",{class:"tick",x1:cx-5,y1:cy,x2:cx-9,y2:cy}));
-      // dot
-      var rad = done?4 : (isCur||gate)?5 : 3.2;
-      var dot=el("circle",{class:"dot",cx:cx,cy:cy,r:rad,fill:(st==="skipped"||(!done&&!isCur&&!gate&&st!=="revising"))?"none":color,
-        stroke:color,"stroke-width":(st==="pending"||st==="skipped")?1.3:0,"stroke-dasharray":st==="skipped"?"2 2":"0"});
-      dot.setAttribute("style","filter:"+(isCur?"drop-shadow(0 0 6px "+cssv("--active-glow")+")":"none"));
-      g.appendChild(dot);
-      // paper-ring (punches dot off the rail)
-      if(!(st==="pending"||st==="skipped")) g.appendChild(el("circle",{cx:cx,cy:cy,r:rad+2.2,fill:"none",stroke:cssv("--paper"),"stroke-width":2.2}));
-      g.appendChild(dot); // re-add on top of ring
-      // glyph in dot for done/gate/rev
-      if(GLY[st]){var gl=el("text",{x:cx,y:cy+2.6,"text-anchor":"middle",fill:cssv("--paper"),"font-size":"6.5","font-weight":"800"});gl.textContent=GLY[st];g.appendChild(gl);}
-      // label
-      var num=el("text",{x:cx+12,y:cy-2,class:"num"}); num.textContent=s.number; g.appendChild(num);
-      var nm=el("text",{x:cx+12,y:cy+7,class:"nm"});
-      var t=s.name||s.slug; if(t.length>16)t=t.slice(0,15)+"\\u2026"; nm.textContent=t; g.appendChild(nm);
-      // hover detail (produces) via a real DOM tooltip, positioned over the canvas
-      g.style.cursor="default";
-      g.addEventListener("mouseenter",function(){ showDetail(s, cx, cy); });
-      g.addEventListener("mouseleave",hideDetail);
-      svg.appendChild(g);
-    });
-
-    // halo gradient def — gate-orange when waiting on the user, green when AI is working
-    var haloColor = (cur && cur.state==="awaiting-approval") ? cssv("--gate") : cssv("--active");
-    var defs=el("defs",{});
-    var rg=el("radialGradient",{id:"haloGrad"});
-    rg.appendChild(el("stop",{offset:"0%","stop-color":haloColor,"stop-opacity":"0.34"}));
-    rg.appendChild(el("stop",{offset:"70%","stop-color":haloColor,"stop-opacity":"0"}));
-    defs.appendChild(rg); svg.insertBefore(defs,svg.firstChild);
-
-    var old=canvas.querySelector("svg"); if(old)old.remove();
-    canvas.appendChild(svg);
-
-    // FIT-TO-FRAME: scale check. If content fits the host frame, let viewBox scale it
-    // to 100%. If it can't fit legibly (scale would shrink below ~0.62), allow scroll.
-    var availW=Host.maxW-28, availH=(Host.maxH||canvas.clientHeight||520)-10;
-    var scale=Math.min(availW/W, availH/H, 1.4);
-    if(scale < 0.6){ canvas.classList.add("scrollable"); svg.setAttribute("width",W); svg.setAttribute("height",H);
-      if(curSlug&&pos[curSlug]){ /* one-time center, only when scrollable */ }
-    } else { canvas.classList.remove("scrollable"); svg.removeAttribute("width"); svg.removeAttribute("height"); }
-
-    renderStream(d.recentEvents||[]);
   }
 
-  // momentum ticker — last few audit events, quiet, most-recent-first, progressively disclosed
-  function renderStream(events){
-    var labels={STAGE_STARTED:["started","act"],STAGE_COMPLETED:["done","ok"],GATE_APPROVED:["approved","ok"],
-      STAGE_AWAITING_APPROVAL:["gate opened","gate"],STAGE_REVISING:["revising","warn"],ARTIFACT_CREATED:["wrote","ok"],
-      ARTIFACT_UPDATED:["updated","ok"],SUBAGENT_COMPLETED:["reviewed","act"],RULE_LEARNED:["learned","act"],
-      SENSOR_FAILED:["check failed","warn"],PHASE_COMPLETED:["phase done","ok"],PHASE_VERIFIED:["phase verified","ok"],
-      STAGE_SKIPPED:["skipped","none"],STAGE_JUMPED:["jumped","act"]};
-    function pretty(slug){return slug?slug.replace(/-/g," "):"";}
-    // keep only meaningful workflow events; drop session/sensor/infra noise from the stream.
-    var shown=(events||[]).filter(function(e){return labels[e.event];}).slice(0,4);
-    var html=shown.map(function(e){
-      var L=labels[e.event];
-      var what=pretty(e.stage)|| (e.detail||"").split("/").pop() || "";
-      if(what.length>22)what=what.slice(0,21)+"\\u2026";
-      return '<span class="ev '+L[1]+'"><span class="dotmark"></span><span class="k">'+esc(L[0])+'</span> '+esc(what)+'</span>';
-    }).join("");
-    document.getElementById("stream").innerHTML=html;
-  }
-
-  function showDetail(s,cx,cy){
-    var det=document.getElementById("detail");
-    var arts=(s.produces||[]);
-    det.innerHTML='<div style="color:var(--ink);font-weight:700;letter-spacing:.04em">'+esc(s.number)+' '+esc(s.name||s.slug)+'</div>'+
-      (arts.length?'<div style="margin-top:3px;color:var(--ink-3)">produces: '+esc(arts.join(", "))+'</div>':'');
-    det.style.opacity="1";
-    // position near top-left of canvas (simple, avoids overlap math)
-    det.style.left="22px"; det.style.bottom="16px"; det.style.top="auto";
-  }
-  function hideDetail(){ document.getElementById("detail").style.opacity="0"; }
-
-  document.getElementById("expandBtn").addEventListener("click",toggleMode);
-  document.getElementById("showAll").addEventListener("click",function(){showAll=!showAll;this.classList.toggle("on",showAll);draw();});
-  syncExpand(); draw();
+  document.addEventListener("DOMContentLoaded",draw);draw();
   ["openai:set_globals","openai:set_theme","openai:host_context","openai:tool_response","set_globals","message"].forEach(function(ev){
-    window.addEventListener(ev,function(e){ if(e&&e.data&&e.data.hostContext)applyHostContext(e.data.hostContext); syncExpand(); draw(); });
+    window.addEventListener(ev,function(e){if(e&&e.data&&e.data.hostContext)applyHostContext(e.data.hostContext);draw();});
   });
-  window.addEventListener("resize",draw);
-  setInterval(poll, 5000); // reflect aidlc-state.md changes live
+  setInterval(poll,5000);
 })();
 `;
 
