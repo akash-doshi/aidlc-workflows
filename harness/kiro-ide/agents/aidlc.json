@@ -30,7 +30,8 @@
     "fs_write": {
       "allowedPaths": [
         "aidlc/spaces/**",
-        ".kiro/sensors/**"
+        ".kiro/sensors/**",
+        "aidlc/.aidlc-compose-pending"
       ]
     },
     "subagent": {
@@ -38,7 +39,8 @@
         "aidlc-developer-agent",
         "aidlc-architect-agent",
         "aidlc-architecture-reviewer-agent",
-        "aidlc-product-lead-agent"
+        "aidlc-product-lead-agent",
+        "aidlc-composer-agent"
       ]
     }
   },
