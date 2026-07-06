@@ -1,6 +1,6 @@
 # Phases and Stages
 
-The AI-DLC lifecycle is organized into 5 phases containing 32 stages. This chapter explains each phase, lists its stages, and shows how they connect.
+The AI-DLC lifecycle is organized into 5 phases containing 36 stages. This chapter explains each phase, lists its stages, and shows how they connect.
 
 > **Harness note.** The methodology — the phases, stages, agents, and gates this
 > guide describes — is identical on every harness. Where a mechanic differs by
@@ -124,15 +124,21 @@ flowchart TD
 
 | # | Stage | Lead | Supporting | Key Artifacts | Condition |
 |---|-------|------|-----------|---------------|-----------|
-| 1.1 | Intent Capture & Framing | aidlc-product-agent | aidlc-architect-agent | Intent statement, stakeholder map | ALWAYS |
+| 1.1 | Intent Capture & Framing | aidlc-product-agent | aidlc-architect-agent | Intent statement, stakeholder map, source inventory, open questions record | ALWAYS |
 | 1.2 | Market Research | aidlc-product-agent | — | Competitive analysis, build-vs-buy | CONDITIONAL |
 | 1.3 | Feasibility & Constraints | aidlc-architect-agent | aidlc-aws-platform-agent, aidlc-compliance-agent | Feasibility assessment, constraint register, RAID log | CONDITIONAL |
 | 1.4 | Scope Definition | aidlc-product-agent | aidlc-delivery-agent | Scope definition, intent backlog | ALWAYS |
 | 1.5 | Team Formation | aidlc-delivery-agent | — | Team assessment, mob composition plan | CONDITIONAL |
 | 1.6 | Rough Mockups | aidlc-design-agent | aidlc-product-agent | Wireframes, user flows, concept deck | CONDITIONAL |
 | 1.7 | Approval & Handoff | aidlc-delivery-agent | aidlc-product-agent | Initiative brief, decision log | ALWAYS |
+| 1.8 | Discovery Current State | aidlc-product-agent | aidlc-design-agent, aidlc-architect-agent | Current state, design language record | Discovery scope only (always runs within it) |
+| 1.9 | Discovery Future State | aidlc-product-agent | aidlc-design-agent, aidlc-architect-agent | Future state, assumptions record | Discovery scope only (always runs within it) |
+| 1.10 | Discovery Experimentation | aidlc-product-agent | aidlc-developer-agent, aidlc-quality-agent, aidlc-design-agent | Test plans, evidence record | Discovery scope only (always runs within it) |
+| 1.11 | Discovery Decision | aidlc-product-agent | aidlc-product-lead-agent, aidlc-delivery-agent | Decision pack | Discovery scope only (always runs within it) |
 
 **Stage colors:** Green = ALWAYS (runs for every scope). Yellow = CONDITIONAL (skipped for some scopes).
+
+Stages 1.8–1.11 form the opt-in discovery path (not shown in the flow above): together with the shared 1.1 Intent Capture stage they run only under the `discovery` scope, ending at 1.11 in an explicit decision — commit (build it), pivot (keep what was learned, reframe), or park (stop for now, keep everything) — instead of the Ideation → Inception gate. A commit can continue into Inception in the same workflow under a delivery scope, or hand off to another team via the decision pack. See [Scopes, Depth, and Test Strategy](05-scopes-and-depth.md).
 
 ---
 

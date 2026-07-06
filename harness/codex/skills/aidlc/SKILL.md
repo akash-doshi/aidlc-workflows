@@ -134,15 +134,16 @@ Source of truth: one file per scope under `.codex/scopes/aidlc-<name>.md` (ident
 
 | Scope          | Depth         | TestStrategy | EXECUTE / Total |
 |----------------|---------------|--------------|-----------------|
-| bugfix         | Minimal       | (default)    | 7 / 32          |
-| enterprise     | Comprehensive | (default)    | 32 / 32         |
-| feature        | Standard      | (default)    | 32 / 32         |
-| infra          | Standard      | (default)    | 13 / 32         |
-| mvp            | Standard      | (default)    | 22 / 32         |
-| poc            | Minimal       | (default)    | 8 / 32          |
-| refactor       | Minimal       | (default)    | 8 / 32          |
-| security-patch | Minimal       | (default)    | 10 / 32         |
-| workshop       | Standard      | Minimal      | 25 / 32         |
+| bugfix         | Minimal       | (default)    | 7 / 36          |
+| discovery      | Standard      | (default)    | 8 / 36          |
+| enterprise     | Comprehensive | (default)    | 32 / 36         |
+| feature        | Standard      | (default)    | 32 / 36         |
+| infra          | Standard      | (default)    | 13 / 36         |
+| mvp            | Standard      | (default)    | 22 / 36         |
+| poc            | Minimal       | (default)    | 8 / 36          |
+| refactor       | Minimal       | (default)    | 8 / 36          |
+| security-patch | Minimal       | (default)    | 10 / 36         |
+| workshop       | Standard      | Minimal      | 25 / 36         |
 
 <!-- END: compiled scope grid -->
 
@@ -176,6 +177,10 @@ The engine reads the compiled `data/stage-graph.json` directly for all routing; 
 | team-formation | 1.5 | Team Formation | Ideation | CONDITIONAL | aidlc-delivery-agent | — | inline |
 | rough-mockups | 1.6 | Rough Mockups | Ideation | CONDITIONAL | aidlc-design-agent | aidlc-product-agent | inline |
 | approval-handoff | 1.7 | Approval & Handoff | Ideation | ALWAYS | aidlc-delivery-agent | aidlc-product-agent | inline |
+| discovery-current-state | 1.8 | Discovery Current State | Ideation | ALWAYS | aidlc-product-agent | aidlc-design-agent, aidlc-architect-agent | inline |
+| discovery-future-state | 1.9 | Discovery Future State | Ideation | ALWAYS | aidlc-product-agent | aidlc-design-agent, aidlc-architect-agent | inline |
+| discovery-experimentation | 1.10 | Discovery Experimentation | Ideation | ALWAYS | aidlc-product-agent | aidlc-developer-agent, aidlc-quality-agent, aidlc-design-agent | inline |
+| discovery-decision | 1.11 | Discovery Decision | Ideation | ALWAYS | aidlc-product-agent | aidlc-product-lead-agent, aidlc-delivery-agent | inline |
 | reverse-engineering | 2.1 | Reverse Engineering | Inception | CONDITIONAL | aidlc-developer-agent | aidlc-architect-agent | subagent |
 | practices-discovery | 2.2 | Practices Discovery | Inception | CONDITIONAL | aidlc-pipeline-deploy-agent | aidlc-quality-agent, aidlc-developer-agent, aidlc-devsecops-agent | inline |
 | requirements-analysis | 2.3 | Requirements Analysis | Inception | ALWAYS | aidlc-product-agent | — | inline |

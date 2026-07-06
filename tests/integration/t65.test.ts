@@ -1,7 +1,8 @@
 // covers: function:parseStageFrontmatter, function:emitStageFrontmatter, function:loadAgents
 //
-// t65 — end-to-end stage-file migration integrity across all 32 committed
-// stage .md files. Mechanism: none (pure functions over read-only on-disk
+// t65 — end-to-end stage-file migration integrity across all 36 committed
+// stage .md files (32 at the .sh's writing, +4 ideation discovery stages).
+// Mechanism: none (pure functions over read-only on-disk
 // stage files + the committed stage-graph.json; zero CLI spawns, zero LLM,
 // zero tokens).
 // Technique: aggregation-then-assert (one beforeAll walk, 22 example-based
@@ -262,6 +263,16 @@ beforeAll(() => {
     .map((s) => s.slug);
 
   const topoOrder = (() => {
+    // Tie-break: the graph's pinned numeric order (rank in jsonOrder). The .sh
+    // used an alphabetical tie-break, which coincided with numeric order at
+    // the 32-stage graph; the discovery stages (1.8-1.11) sort alphabetically
+    // BEFORE intent-capture (1.1) yet are numbered after approval-handoff, so
+    // the tie-break must follow the pinned numbers. Kahn with this tie-break
+    // reproduces jsonOrder exactly IFF the numbering is a valid topological
+    // order of the requires_stage DAG — the same invariant the .sh asserted.
+    const rank = new Map<string, number>(jsonOrder.map((s, i) => [s, i]));
+    const byRank = (a: string, b: string): number =>
+      (rank.get(a) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b) ?? Number.MAX_SAFE_INTEGER);
     const nodes = parsed.map((p) => ({
       slug: p.slug,
       phase: p.phase,
@@ -299,7 +310,7 @@ beforeAll(() => {
       const ready = group
         .filter((n) => inDeg[n.slug] === 0)
         .map((n) => n.slug)
-        .sort();
+        .sort(byRank);
       while (ready.length) {
         const s = ready.shift()!;
         result.push(s);
@@ -307,7 +318,7 @@ beforeAll(() => {
           inDeg[next]--;
           if (inDeg[next] === 0) {
             let i = 0;
-            while (i < ready.length && ready[i] < next) i++;
+            while (i < ready.length && byRank(ready[i], next) < 0) i++;
             ready.splice(i, 0, next);
           }
         }
@@ -391,10 +402,11 @@ beforeAll(() => {
 // Parse + schema validation (.sh assertions 1-3)
 // ============================================================
 describe("t65 parse + schema validation (in-process)", () => {
-  // .sh #1: "all 32 stage files parse via parseStageFrontmatter"
-  test("all 32 stage files parse via parseStageFrontmatter (total=32, no errors)", () => {
+  // .sh #1: "all 32 stage files parse via parseStageFrontmatter" — the tree
+  // has since grown to 36 with the four ideation discovery stages.
+  test("all 36 stage files parse via parseStageFrontmatter (total=36, no errors)", () => {
     expect(agg.parseErrors).toEqual([]);
-    expect(agg.totalParsed).toBe(32);
+    expect(agg.totalParsed).toBe(36);
   });
 
   // .sh #2: "non-init stages validate against milestone 5 schema with ctx.agents"
@@ -417,10 +429,11 @@ describe("t65 parse + schema validation (in-process)", () => {
 // Per-phase stage counts (.sh assertions 4-8)
 // ============================================================
 describe("t65 per-phase stage counts (in-process)", () => {
-  // .sh #4-8: init=3, ideation=7, inception=8, construction=7, operation=7.
+  // .sh #4-8: init=3, ideation=11 (7 at the .sh's writing, +4 discovery
+  // stages in v2.2.x), inception=8, construction=7, operation=7.
   const expected: Array<[string, number]> = [
     ["initialization", 3],
-    ["ideation", 7],
+    ["ideation", 11],
     ["inception", 8],
     ["construction", 7],
     ["operation", 7],
@@ -516,8 +529,8 @@ describe("t65 shape guards (in-process)", () => {
   });
 
   // .sh #20: "round-trip (parse → emit → parse) yields deep-equal object for
-  // all 32 stages"
-  test("round-trip (parse -> emit -> parse) deep-equals original for all 32 stages", () => {
+  // all 32 stages" (now 36).
+  test("round-trip (parse -> emit -> parse) deep-equals original for all 36 stages", () => {
     expect(agg.roundTripMismatches).toEqual([]);
   });
 
