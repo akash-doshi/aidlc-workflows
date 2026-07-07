@@ -1,6 +1,6 @@
 // covers: scope:discovery, stage:ideation/intent-capture, stage:ideation/discovery-current-state, stage:ideation/discovery-future-state, stage:ideation/discovery-experimentation, stage:ideation/discovery-decision
 //
-// t199 — discovery scope: compiled-artifact contract. Deterministic
+// t203 — discovery scope: compiled-artifact contract. Deterministic
 // integration twin of tests/e2e/t138-scope-exclusion-counts.test.ts's
 // data-driven style: every expectation below is DERIVED from (or checked
 // against) the shipped compiled artifacts — scope-grid.json, stage-graph.json,
@@ -20,7 +20,7 @@
 //     ONLY, so no other scope's plan grows. intent-capture keeps its four
 //     stock-scope tags and gains ONLY discovery — the non-breaking contract
 //     for the one existing stage this scope extends.
-//   - tools/aidlc-utility.ts inferScopeFromText (:3329) — discovery ships
+//   - tools/aidlc-utility.ts inferScopeFromText (:3372) — discovery ships
 //     `keywords: []` (the composed-scope convention), so keyword routing can
 //     NEVER resolve it; only an explicit `/aidlc discovery` / `--scope
 //     discovery` selects it.
@@ -121,7 +121,7 @@ const TEMPLATES = [
 // must never appear.
 const FORBIDDEN_TEMPLATES = ["intent-statement.md", "discovery-brief.md"] as const;
 
-describe("t199 discovery scope — compiled EXECUTE plan (scope-grid.json + stage-graph.json)", () => {
+describe("t203 discovery scope — compiled EXECUTE plan (scope-grid.json + stage-graph.json)", () => {
   test("discovery resolves exactly 8 EXECUTE stages in numeric order (0.1-0.3, 1.1, 1.8-1.11)", () => {
     const grid = readGrid();
     const graph = readGraph();
@@ -199,7 +199,7 @@ describe("t199 discovery scope — compiled EXECUTE plan (scope-grid.json + stag
   });
 });
 
-describe("t199 discovery scope — keyword routing can never resolve it", () => {
+describe("t203 discovery scope — keyword routing can never resolve it", () => {
   test("mapping.discovery.keywords is empty ([] — the composed-scope convention)", () => {
     const mapping = loadScopeMapping();
     expect(mapping.discovery).toBeDefined();
@@ -220,7 +220,7 @@ describe("t199 discovery scope — keyword routing can never resolve it", () => 
   });
 });
 
-describe("t199 discovery scope — framework-default templates ship with sensor-checkable shape", () => {
+describe("t203 discovery scope — framework-default templates ship with sensor-checkable shape", () => {
   for (const t of TEMPLATES) {
     test(`templates/${t} exists with at least 2 H2 headings`, () => {
       const p = join(TEMPLATES_DIR, t);
@@ -239,5 +239,45 @@ describe("t199 discovery scope — framework-default templates ship with sensor-
     for (const t of FORBIDDEN_TEMPLATES) {
       expect(existsSync(join(TEMPLATES_DIR, t)), `${t} must not exist`).toBe(false);
     }
+  });
+});
+
+describe("t203 discovery scope — the extended intent-capture and the commit continuation keep their contracts (stage prose pins)", () => {
+  const STAGES_DIR = join(AIDLC_SRC, "aidlc-common", "stages", "ideation");
+
+  test("intent-capture's intake ask flows through the questions file (Stop-hook contract)", () => {
+    const s = readFileSync(join(STAGES_DIR, "intent-capture.md"), "utf-8");
+    // The intake question is written into the stage's own questions file with
+    // a blank [Answer]: tag BEFORE any wait, so the forwarding-loop Stop hook
+    // can tell a human-wait from an abandoned stage. A conversational ask
+    // outside the file was the round-3 adversarial finding; pin its fix.
+    expect(s).toContain("intent-capture-questions.md");
+    expect(s).toContain("(select all that apply)");
+    expect(s).toContain("None of these — the description is the whole input");
+    expect(s).toMatch(/blank\s*\n?\s*tag|blank \[Answer\]: tag/);
+    // The non-breaking pledge in prose: nothing supplied means the classic path.
+    expect(s.replace(/\s+/g, " ")).toContain("every question is appended, exactly as before");
+    // Material-derived answers are never typed into the questions file (the
+    // protocol's leave-all-blank rule): they live in the open questions
+    // record, unconfirmed, and the gate is the named confirmation point.
+    expect(s).toContain("do NOT ask it");
+    expect(s).toContain("status `unconfirmed`");
+  });
+
+  test("discovery-decision's commit continuation relays real engine verbs and keeps the hand-off path", () => {
+    const s = readFileSync(join(STAGES_DIR, "discovery-decision.md"), "utf-8");
+    // The continuation sequence, live-verified when designed: scope-change,
+    // then set-status at the stage the engine names, then honest skips.
+    expect(s).toContain("aidlc-utility.ts scope-change --scope");
+    expect(s).toContain("aidlc-utility.ts set-status --stage");
+    expect(s).toContain("aidlc-state.ts skip");
+    expect(s).toContain("covered by the discovery run");
+    // Both destinations stay: continue here, or hand off via the pack.
+    expect(s).toContain("Continue here");
+    expect(s).toContain("Hand off");
+    // The three options carry plain-language meaning at the point of use.
+    expect(s).toContain("**Commit** means");
+    expect(s).toContain("**Pivot** means");
+    expect(s).toContain("**Park** means");
   });
 });

@@ -197,7 +197,7 @@ describe("t129 stage-runner drift guard (migrated from t129-stage-runner-drift.s
 
   // ===========================================================================
   // Test 2 — the count is exactly 33 (36 compiled stages minus the 3 bootstrap
-  // initialization stages; 29 before the 5 ideation discovery stages landed).
+  // initialization stages; 29 before the 4 ideation discovery stages landed).
   // STRONGER: also assert NONE of the runnable stages is an
   // initialization-phase stage (the very exclusion that yields 33).
   // ===========================================================================

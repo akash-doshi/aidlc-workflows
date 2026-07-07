@@ -149,7 +149,7 @@ as `SENSOR_PASSED` / `SENSOR_FAILED` events in the audit shard under
 The imported sensors check those outputs:
 
 - **`required-sections`** verifies each output against its resolved template's H2 set (the framework default templates ship for `test-plans` and `evidence-record`), falling back to the registry default (≥2 H2 headings). Failure mode: missing headings emit `SENSOR_FAILED` with detail at `<record>/.aidlc-sensors/<stage-slug>/required-sections-<iso>.md`.
-- **`upstream-coverage`** verifies the output prose references each artefact declared in this stage's `consumes:` frontmatter. Failure mode: missing upstream references emit `SENSOR_FAILED` listing each unreferenced artefact (this stage consumes `assumptions-record`, `future-state`, `current-state`, `design-language-record`).
+- **`upstream-coverage`** verifies the output prose references each artefact declared in this stage's `consumes:` frontmatter. Failure mode: missing upstream references emit `SENSOR_FAILED` listing each unreferenced artefact (this stage consumes `assumptions-record`, `future-state`, `current-state`, `design-language-record`; only those present on disk are checked).
 
 ## Learn
 

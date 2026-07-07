@@ -277,7 +277,7 @@ describe("t01 — shipped-tree file-structure invariant (mechanism: none)", () =
       at("settings.local.json.example"), // 68
       at("knowledge", "aidlc-shared", "state-template.md"), // 69
       mem("org.md"), // 70 — method relocated to aidlc/spaces/default/memory/
-      mem("project.md"), // 71
+      mem("project.md"), // 70
       at("CLAUDE.md"), // 71
     ];
     expect(paths.length).toBe(72);

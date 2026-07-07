@@ -28,4 +28,6 @@ validates it at the relevant gate.
 
 Questions no material, research, or person can settle because the answer
 depends on future behavior or on something that does not exist yet. Each
-keeps a pointer to its successor entry (AS-n) in the assumptions record.
+keeps a pointer to its successor entry (AS-n) in the assumptions record
+where the workflow keeps one. "None" is a valid entry, and stays the normal
+entry for workflows that never test assumptions.

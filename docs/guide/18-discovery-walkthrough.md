@@ -49,8 +49,10 @@ the standard Intent Capture stage (1.1), and four discovery stages (1.8–1.11).
                                 pack you can hand to a sponsor
 ```
 
-Every stage ends in the standard approval gate. You are never more than one
-stage away from being asked whether the work is right.
+Every stage after initialization ends in the standard approval gate (the
+decision stage's pivot and park choices leave through their own doors
+instead). You are never more than one stage away from being asked whether
+the work is right.
 
 ## Stage 1.1: bring what you have
 
@@ -108,7 +110,8 @@ would disprove it stated up front.
 
 ## Stage 1.10: test the riskiest assumptions
 
-Each assumption gets the cheapest test that could genuinely settle it:
+Assumptions are tested riskiest first, each with a test proportionate to
+what it must settle:
 studying documents or data you already have, walking a user journey, showing
 people a mock, building a thin slice, or running a measurable check. Verdicts
 are honest about their limits — a four-person hallway test is recorded as a

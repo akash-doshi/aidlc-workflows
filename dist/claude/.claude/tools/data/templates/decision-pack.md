@@ -40,7 +40,9 @@ What this initiative will not do.
 
 ## Decision
 
-Recorded when the person answers the decision question in this stage; the
-exit gate ratifies it. Commit, pivot, or park — who decided, and the date.
+Recorded when the person answers the decision question in this stage. On a
+commit the exit gate ratifies it; pivot and park leave through their own
+paths and never reach that gate. Commit, pivot, or park — who decided, and
+the date.
 For park, add the sponsor narrative: what we learned, why not now, and what
 would reopen it.

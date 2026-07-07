@@ -227,10 +227,10 @@ Run the health check to confirm everything is in place:
 ✓ Hook heartbeats: not yet fired (first workflow stage will populate)
 ✓ State matches last audit event (no drift)
 ✓ Cycle detection: 0 cycles
-✓ Orphan stage files: 37 graph entries all have files
+✓ Orphan stage files: 36 graph entries all have files
 ✓ Scope validation: 10 scopes valid (27 advisories)
 ✓ Schema validation: 36/36 stages valid
-✓ Graph references: 132 artifacts + edges resolved
+✓ Graph references: 131 artifacts + edges resolved
 ✓ Keyword overlap: no conflicts
 ```
 

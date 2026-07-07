@@ -92,7 +92,8 @@ inventory is itself a fact the record keeps. When materials WERE supplied,
 suggest, once, what else would typically complement them ("a process this
 size usually has an SOP — can you share it?"), as a follow-up question in the
 questions file with a blank [Answer]: tag; record declines under "Suggested
-but not supplied". When the person declined at Step 3, suggest nothing.
+but not supplied", and note anything no supplied or pending material covers
+under "Gaps". When the person declined at Step 3, suggest nothing.
 
 ### Step 5: Generate Clarifying Questions
 
@@ -196,6 +197,10 @@ Use stage-protocol.md completion template with completion emoji: :bulb:
 ## Sensors
 
 This stage's outputs are markdown artefacts under `<record>/ideation/intent-capture/`.
+Sensor results do not print to the terminal on pass or fail — outcomes land
+as `SENSOR_PASSED` / `SENSOR_FAILED` events in the audit shard under
+`<record>/audit/`, and failure findings land under
+`<record>/.aidlc-sensors/intent-capture/`.
 
 The imported sensors check those outputs:
 

@@ -24,7 +24,7 @@ graph LR
     subgraph IDEATION["IDEATION (1.1-1.7)"]
         I1["Intent Capture"]
         I7["Approval & Handoff"]
-        I1 -.->|"7 stages"| I7
+        I1 -.->|"11 stages: 7 delivery, 4 discovery-only"| I7
     end
 
     subgraph INCEPTION["INCEPTION (2.1-2.8)"]

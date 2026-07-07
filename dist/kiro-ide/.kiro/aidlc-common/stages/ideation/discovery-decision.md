@@ -155,6 +155,14 @@ already exists — this stage adds no machinery):
    the whole discovery record already in place — the delivery path's entry
    stages consume the intent statement this workflow produced at 1.1.
 
+Two display notes for the conductor, so the sequence's output is not
+misread: the audit shard will show `WORKFLOW_COMPLETED` (from the gate)
+followed by `SCOPE_CHANGED` and further stage events — that ordering is
+correct, the completion belongs to the gate and the continuation re-opens
+the same workflow. And the state file may render the finished discovery
+stages as completed check-boxes beside SKIP annotations — read Current
+Status as the truth of where the workflow is.
+
 When the person chose **Hand off**, none of this runs: the workflow completes
 at the gate, and the decision pack (with its handoff contract) is the record
 the receiving workflow starts from.

@@ -7,7 +7,7 @@
 #   2. framework default   <harness>/tools/data/templates/<artifact>.md          (THIS dir)
 #   3. else                the generic >=2-H2 floor                              (fallthrough)
 #
-# The framework ships NINE default template files here (since 2.2.2, one per
+# The framework ships NINE default template files here (since 2.2.7, one per
 # discovery-scope artifact — assumptions-record through test-plans; the
 # intent-statement deliberately ships none). Every other
 # artifact still hits the generic floor until a team authors its own template,

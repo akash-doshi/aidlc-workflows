@@ -63,7 +63,7 @@ const STAGE_TABLE: ReadonlyArray<readonly [phase: string, slug: string]> = [
   ["initialization", "workspace-scaffold"],
   ["initialization", "workspace-detection"],
   ["initialization", "state-init"],
-  // Ideation (12)
+  // Ideation (11)
   ["ideation", "intent-capture"],
   ["ideation", "market-research"],
   ["ideation", "feasibility"],

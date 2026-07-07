@@ -145,7 +145,7 @@ flowchart LR
 
 The welcome message is rendered at session start via `companyAnnouncements` in `settings.json` — it is not a stage and produces no artifact.
 
-### Ideation (stages 1.1-1.7)
+### Ideation (stages 1.1-1.11)
 
 | Stage | Key Artifacts | Condition |
 |-------|--------------|-----------|

@@ -71,7 +71,7 @@ Chat).
 
 ### Step 4: Capture the Design Language Record
 
-Create or extend `<record>/ideation/discovery-current-state/design-language-record.md` with four parts:
+Create or extend `<record>/ideation/discovery-current-state/design-language-record.md` with five parts (matching the framework template's sections):
 
 - **Component inventory** — every recurring interface component as the product names it, with variants, states, and source references
 - **Design tokens** — the typed visual values named by role, kept machine-readable so a generated mock-up can be checked against them deterministically

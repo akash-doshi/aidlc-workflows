@@ -14,7 +14,7 @@ open-questions-record, team-stated, or model-suggested — permanently marked
 as such), what it rests on (an answered question, a current-state
 observation, a design-language-record entry, or a mandate the
 intent-statement records), the condition that
-would disprove it (mandatory before an entry leaves proposed), the test that
+would disprove it (mandatory before an entry joins the riskiest-first ranking), the test that
 tests it, and its status.
 
 | Id | Claim | Type | Origin | Rests on | Disproved if | Test | Status |

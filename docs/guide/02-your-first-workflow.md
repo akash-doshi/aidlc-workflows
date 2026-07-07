@@ -56,7 +56,7 @@ The orchestrator writes the intent's `aidlc-state.md` (under its record dir) wit
 
 ```
 ─── Scope Detection ───────────────────────────────────────────────────────────
-Detected scope: feature (Standard depth, Standard test strategy, 32 stages)
+Detected scope: feature (Standard depth, Standard test strategy, 32 of 36 stages)
 ▸ Approve scope? [Yes / Change scope / Change depth / Change test strategy]
 > Yes
 ```

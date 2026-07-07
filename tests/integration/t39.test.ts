@@ -18,7 +18,7 @@
 // initialization} (line 1791), one PHASE_SKIPPED per phase the scope excludes
 // entirely (no EXECUTE stages — line 1804), and — when the first post-init
 // stage is in a later phase — a SECOND PHASE_STARTED for that phase at the
-// init→first-phase handoff (line 2130). It writes the `## Phase Progress`
+// init→first-phase handoff (aidlc-utility.ts, PHASE_STARTED emit near line 2508). It writes the `## Phase Progress`
 // block (lines 2036-2042) with each phase tagged Active/Pending/Skipped
 // (phaseStatus, line 2028). The audit row shape is `**Event**: <TYPE>` at
 // line start (aidlc-audit.ts:258), exactly what the .sh greps.
@@ -182,7 +182,7 @@ function skippedPhases(content: string): string[] {
  * audit CONTENT (shard-concat). Same block-walk as skippedPhases. Used by the
  * discovery block to pin the init→ideation handoff PHASE_STARTED
  * (aidlc-utility.ts init emits a second PHASE_STARTED for the first
- * post-init stage's phase — line 2130).
+ * post-init stage's phase — the PHASE_STARTED emit near aidlc-utility.ts:2508).
  */
 function startedPhases(content: string): string[] {
   let matched = false;
@@ -243,7 +243,7 @@ const EXPECTED_SKIPPED: Record<string, string[]> = {
   "security-patch": ["ideation"],
   workshop: ["ideation"],
   // discovery (added v2.2.x, not in the .sh): EXECUTEs only the 3 init stages
-  // + the 5 ideation discovery stages, so inception/construction/operation
+  // + the 4 ideation discovery stages, so inception/construction/operation
   // are fully excluded per the compiled scope-grid.json.
   discovery: ["inception", "construction", "operation"],
 };
@@ -325,7 +325,7 @@ describe("t39 aidlc-utility init — per-scope phase sequence (migrated from t39
       // --- Discovery-only assertion 4 (not in the .sh — the scope landed in
       // v2.2.x): discovery's first post-init stage is intent-capture (1.1,
       // ideation), so the init→first-stage handoff must ALSO emit a
-      // PHASE_STARTED for ideation (aidlc-utility.ts line 2130) alongside the
+      // PHASE_STARTED for ideation (aidlc-utility.ts near line 2508) alongside the
       // initialization one asserted in test 1. Per the compiled grid, ideation
       // is the ONLY post-init phase discovery starts. ---
       if (scope === "discovery") {

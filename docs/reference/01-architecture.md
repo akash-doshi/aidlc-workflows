@@ -17,7 +17,7 @@ graph LR
     subgraph IDEATION["IDEATION (1.1-1.7)"]
         I1["Intent Capture"]
         I7["Approval & Handoff"]
-        I1 -.->|"7 stages"| I7
+        I1 -.->|"11 stages: 7 delivery, 4 discovery-only"| I7
     end
 
     subgraph INCEPTION["INCEPTION (2.1-2.8)"]
@@ -464,7 +464,7 @@ appends — there is intentionally no `merge=union` attribute.
 
 7. **Flat agent files** -- Each agent is a single `.md` file in `agents/` (not a subdirectory with `agent.md` + `knowledge/`). This simplifies the structure and makes agents discoverable. Methodology knowledge lives separately in `knowledge/[agent]/`.
 
-8. **Scope-driven adaptive depth** -- Nine named scopes (enterprise, feature, mvp, poc, bugfix, refactor, infra, security-patch, workshop) plus auto-detect determine which stages execute and at what depth. Each scope is a `.claude/scopes/aidlc-<name>.md` file (identity); membership is a per-stage `scopes:` frontmatter tag, transposed at compile into the EXECUTE/SKIP grid (`.claude/tools/data/scope-grid.json`, authoritative) and compiled into a summary table in SKILL.md (informational). NL keyword→scope inference reads each scope's `keywords` from its `.md` frontmatter. The user can override at any approval gate.
+8. **Scope-driven adaptive depth** -- Ten named scopes (enterprise, feature, mvp, poc, bugfix, refactor, infra, security-patch, workshop, discovery) plus auto-detect determine which stages execute and at what depth. Each scope is a `.claude/scopes/aidlc-<name>.md` file (identity); membership is a per-stage `scopes:` frontmatter tag, transposed at compile into the EXECUTE/SKIP grid (`.claude/tools/data/scope-grid.json`, authoritative) and compiled into a summary table in SKILL.md (informational). NL keyword→scope inference reads each scope's `keywords` from its `.md` frontmatter. The user can override at any approval gate.
 
 9. **Minimal rules** -- Only guardrails (~35 lines total) live in the space memory layer (`aidlc/spaces/<space>/memory/`, pulled in via the `.claude/rules/aidlc.md` @-import stub). Everything else (verification, brownfield safeguards, audit format, adaptive patterns) lives in `knowledge/aidlc-shared/` or is embedded in SKILL.md/stage-protocol.md. This prevents context bloat in non-AI-DLC conversations since rules are always loaded.
 

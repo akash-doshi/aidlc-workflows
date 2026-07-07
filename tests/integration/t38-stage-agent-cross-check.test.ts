@@ -143,7 +143,7 @@ describe("t38 Lead Agent cross-check (migrated from t38-stage-agent-cross-check.
     expect(ROWS.length).toBe(36);
   });
 
-  // --- The 32 per-row Lead Agent assertions (one `ok`/`not_ok` each) ---------
+  // --- The 36 per-row Lead Agent assertions (one `ok`/`not_ok` each) ---------
   test.each(ROWS)(
     "row '$slug': Lead Agent frontmatter matches graph ($leadAgent)",
     (row) => {

@@ -259,12 +259,12 @@ Validate that all of this implementation's prerequisites, configuration, and sta
 ✓ Hook drops: none recorded
 ✓ State matches last audit event (no drift)
 ✓ Cycle detection: 0 cycles
-✓ Orphan stage files: 37 graph entries all have files
+✓ Orphan stage files: 36 graph entries all have files
 ✓ Uncompiled stage files: 0 stage files missing from the compiled graph
 ✓ Enabled plugins: all enabled (no selection); enabled stage counts: aidlc=33, bootstrap=3
-✓ Scope validation: 10 scopes valid (29 advisories)
-✓ Schema validation: 32/32 stages valid
-✓ Graph references: 122 artifacts + edges resolved
+✓ Scope validation: 10 scopes valid (27 advisories)
+✓ Schema validation: 36/36 stages validated
+✓ Graph references: 131 artifacts + edges resolved
 ✓ Keyword overlap: no conflicts
 ✓ Rule drift: no team/project rule overlaps org policy
 ✓ Paired sensor coverage: no sensor-bound rules (0 feedforward-only)
@@ -538,7 +538,7 @@ Pre-set the default scope for a project. Read from `.claude/settings.json` `env`
 }
 ```
 
-**Valid values:** `enterprise`, `feature`, `mvp`, `poc`, `bugfix`, `refactor`, `infra`, `security-patch`, `workshop`.
+**Valid values:** `enterprise`, `feature`, `mvp`, `poc`, `bugfix`, `refactor`, `infra`, `security-patch`, `workshop`, `discovery`.
 
 **Precedence:** explicit CLI flag > keyword detection > `AWS_AIDLC_DEFAULT_SCOPE` > hard-coded fallback.
 

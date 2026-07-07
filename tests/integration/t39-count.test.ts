@@ -116,12 +116,12 @@ describe("t39 scope EXECUTE-count validation — loadScopeMapping (migrated from
 
   // 1. Enterprise: 32 stages EXECUTE (the discovery stages are NOT tagged
   // enterprise, so the count stays 32 in the 36-stage universe).
-  test("1: enterprise executes all 32 stages", () => {
+  test("1: enterprise executes its 32 delivery-path stages", () => {
     expect(execCount("enterprise")).toBe(32);
   });
 
   // 2. Feature: 32 stages EXECUTE (discovery stages not tagged feature).
-  test("2: feature executes all 32 stages", () => {
+  test("2: feature executes its 32 delivery-path stages", () => {
     expect(execCount("feature")).toBe(32);
   });
 

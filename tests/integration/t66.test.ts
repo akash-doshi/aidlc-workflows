@@ -220,7 +220,7 @@ describe("t66 topoSort (in-process)", () => {
 
 describe("t66 findCycles (in-process)", () => {
   // .sh:101-105
-  test("findCycles(loadGraph()) returns [] for today's 32-stage graph", () => {
+  test("findCycles(loadGraph()) returns [] for today's 36-stage graph", () => {
     expect(findCycles(loadGraph()).length).toBe(0);
   });
   // .sh:107-115 — A->B->A
