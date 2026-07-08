@@ -63,11 +63,13 @@ gap with recollection.
 
 Create `<record>/ideation/discovery-decision/decision-pack.md` as a projection
 of the records: nothing is written fresh that a record already holds. Three
-core parts:
+core parts (the bold names below are the template's exact `##` headings — the
+required-sections sensor checks the pack against the template's heading set,
+so keep them verbatim):
 
 - **The working artifact** — required per the composition's requirement, with any relaxation of that requirement recorded in the pack.
-- **The narrative** — generated into the organization's own proposal format (a steering one-pager, a business case template — ask once, when the pack is first drafted, what shape a proposal takes in this organization), or, where none exists, a plain one-page summary of problem, evidence, recommendation, and cost.
-- **The evidence summary** — every assumption tested with its outcome, its source, and its sample-and-setting qualifier; the open risks; what was set aside along the way; and the cost spent, where the team's practices record cost.
+- **Narrative** — generated into the organization's own proposal format (a steering one-pager, a business case template — ask once, when the pack is first drafted, what shape a proposal takes in this organization), or, where none exists, a plain one-page summary of problem, evidence, recommendation, and cost.
+- **Evidence summary** — every assumption tested with its outcome, its source, and its sample-and-setting qualifier; the open risks; what was set aside along the way; and the cost spent, where the team's practices record cost.
 
 Three adopted sections:
 
@@ -109,7 +111,9 @@ Then relay the outcome through the engine's own verbs. (The verb relays in
 this stage — jump, park, scope-change, set-status, state skip — are the
 documented exception to the orchestrator skill's never-call-the-state-tools
 rule: that rule guards the report-owned stage transitions, while these are
-audited workflow-level commands this stage file instructs by name.)
+workflow-level commands this stage file instructs by name — jump, park,
+scope-change, and skip each emit their own audit event, and set-status is a
+plain state-field write.)
 
 - **Commit** — two record moves before the follow-up question:
   1. Append the **handoff contract** to the decision pack. This is the section delivery consumes, so it instructs rather than documents: it opens with one consumption note — *settled entries are pre-answers for the consuming stage to confirm with the person, never to re-elicit; open items are questions to raise; every gate stays* — and then carries four parts, every entry in the same shape (value, status, confidence, which gate confirmed it, source):
@@ -118,7 +122,7 @@ audited workflow-level commands this stage file instructs by name.)
      - **Open items** — every still-unknown verdict, exported as a low-confidence assumption to re-raise, carrying discovery's recommendation where the record supports one and *ask the person* where it does not.
      - **Starting points** — every test artifact marked promote, registered with its path.
      Close the contract with a short map from what delivery asks first to where this record answers it: functional requirements in Settled, personas and stakeholders in the stakeholder map, scope boundaries in Exclusions and the intent statement, quality expectations in the evidence record. Point at the record — never duplicate it.
-  2. Refresh the **intent statement**: fold the chosen framing and the recorded exclusions into `<record>/ideation/intent-capture/intent-statement.md` as a new `## What Discovery Validated` heading (add it, or update it on a re-entry; every other section stays untouched). The section carries its provenance inline, one source per line, naming the record files the way the rest of the record does: the framing from `future-state.md`, the exclusions from `assumptions-record.md` and `evidence-record.md`, the confirmed answers from `open-questions-record.md`, and it closes by pointing at `decision-pack.md` as the full record behind this update to the intent-statement. (Those file references are not decoration: this stage's upstream-coverage sensor fires on any record write while the stage is active and greps the written file for this stage's consumed artifacts, so a provenance-labeled section passes it by construction, while an unlabeled one logs advisory noise.) The intent statement is the artifact delivery's entry stage reads first, so after a commit it must say what was validated — not what was guessed on day one.
+  2. Refresh the **intent statement**: fold the chosen framing and the recorded exclusions into `<record>/ideation/intent-capture/intent-statement.md` as a new `## What Discovery Validated` heading (add it, or update it on a re-entry; every other section stays untouched). The section carries its provenance inline, one source per line, naming the record files in their file-name form exactly as written here: the framing from `future-state.md`, the exclusions from `assumptions-record.md` and `evidence-record.md`, the confirmed answers from `open-questions-record.md`, and it closes by pointing at `decision-pack.md` as the full record behind this update to `intent-statement.md`. (Those file references are not decoration: this stage's upstream-coverage sensor fires on any record write while the stage is active and checks that the section cites this stage's consumed artifacts in a form it accepts — a standalone slug, a backticked file name like the forms above, or the producing stage's directory as a path segment. A section that names them all passes the sensor; paraphrasing them into spaced prose logs advisory noise.) The intent statement is the record delivery reads first when it needs the intent, so after a commit it must say what was validated — not what was guessed on day one.
 
   Then ask one follow-up structured question (same §3 machinery): **where does the build happen?**
   - **Continue here** — the build happens in this workspace. The same workflow and the same record continue into delivery: proceed to Step 6 and the exit gate, then follow Step 8.
@@ -147,8 +151,9 @@ Use stage-protocol.md completion template with completion emoji: :scales:
 When the person chose **Continue here**, the same workflow and record flow
 into delivery after the gate approves — no new workflow, no re-entry through
 the ideation questionnaire. Relay this sequence of engine verbs, in order
-(each is audited, and the whole sequence was chosen because every verb
-already exists — this stage adds no machinery):
+(the sequence was chosen because every verb already exists — this stage adds
+no machinery; scope-change and skip each emit their own audit event, and
+set-status is a plain state-field write):
 
 1. Ask which delivery scope fits the committed build (a structured question:
    `feature` is the default, `mvp` and `enterprise` are the usual
@@ -165,11 +170,14 @@ already exists — this stage adds no machinery):
    contract"` for each pending ideation stage.
 4. Hand control back to the forwarding loop (`next`). Delivery begins at the
    stage the engine named, and the vision arrives through two wired paths,
-   not through goodwill: the intent statement its entry stage reads was
-   refreshed at commit with the validated framing and exclusions, and the
-   decision pack is a declared optional input of `requirements-analysis`
-   and `user-stories` — the run-stage directive hands them its path, and
-   the upstream-coverage sensor verifies their output referenced it.
+   not through goodwill: the intent statement was refreshed at commit with
+   the validated framing and exclusions (the first delivery stage that
+   needs the intent, `requirements-analysis`, reads it), and the decision
+   pack is a declared optional input of `requirements-analysis` and
+   `user-stories` — the run-stage directive hands them its path, and the
+   upstream-coverage sensor verifies their output referenced it. Further
+   down the same path, `refined-mockups` reads the design language record
+   and the tested mock-up variants from the evidence record the same way.
 
 Two display notes for the conductor, so the sequence's output is not
 misread: the audit shard will show `WORKFLOW_COMPLETED` (from the gate)

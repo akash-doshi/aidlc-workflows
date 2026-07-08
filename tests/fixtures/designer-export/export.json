@@ -1394,6 +1394,14 @@
         {
           "artifact": "team-practices",
           "required": false
+        },
+        {
+          "artifact": "design-language-record",
+          "required": false
+        },
+        {
+          "artifact": "evidence-record",
+          "required": false
         }
       ],
       "requires_stage": [

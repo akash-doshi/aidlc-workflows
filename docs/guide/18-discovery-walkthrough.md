@@ -148,10 +148,15 @@ here**: the workflow switches itself to the delivery scope you pick (`feature`
 is the usual default) and carries straight on into the Inception phase — same
 workflow, same record, no re-entry through the ideation questionnaire, with
 the stages discovery already covered marked as skipped with a reason pointing
-at the decision pack. If the build belongs to another team or repository,
+at the decision pack. Before the switch, the stage folds what was validated
+back into the intent statement (a What Discovery Validated section) and
+appends the handoff contract to the pack, and the first delivery stages that
+need them — requirements analysis and user stories — list the pack among
+their declared inputs, so the vision arrives wired, not hoped for. If the build belongs to another team or repository,
 choose **hand off**: this workflow completes, and the decision pack — which
-carries a machine-readable summary of everything answered, supported, refuted,
-and still open — is what the receiving team's workflow starts from.
+carries a structured summary of everything answered, supported, refuted, and
+still open, each entry with its status, confidence, and source — is what the
+receiving team's workflow starts from.
 
 ## What you end up with
 

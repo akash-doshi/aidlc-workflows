@@ -21,7 +21,7 @@ graph LR
         Z1 -.->|"3 stages"| Z4
     end
 
-    subgraph IDEATION["IDEATION (1.1-1.7)"]
+    subgraph IDEATION["IDEATION (1.1-1.11)"]
         I1["Intent Capture"]
         I7["Approval & Handoff"]
         I1 -.->|"11 stages: 7 delivery, 4 discovery-only"| I7
@@ -58,7 +58,7 @@ graph LR
     style OPERATION fill:#fce4ec,stroke:#e91e63
 ```
 
-<!-- Text fallback: Linear flow: INITIALIZATION (0.1-0.3) auto-proceeds to IDEATION (1.1-1.7), which passes through Verification Gate 1 to INCEPTION (2.1-2.8), through Verification Gate 2 to CONSTRUCTION (3.1-3.7), through Verification Gate 3 to OPERATION (4.1-4.7). A feedback loop returns from 4.7 back to 1.1. -->
+<!-- Text fallback: Linear flow: INITIALIZATION (0.1-0.3) auto-proceeds to IDEATION (1.1-1.11), which passes through Verification Gate 1 to INCEPTION (2.1-2.8), through Verification Gate 2 to CONSTRUCTION (3.1-3.7), through Verification Gate 3 to OPERATION (4.1-4.7). A feedback loop returns from 4.7 back to 1.1. -->
 
 Phases execute sequentially. At each phase boundary (except Initialization → Ideation), a **verification gate** runs automated traceability checks to catch missing links, orphaned artifacts, or inconsistencies before downstream stages build on them.
 

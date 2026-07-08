@@ -191,7 +191,7 @@ The 3 Initialization stages run automatically inside `aidlc-utility init`. Works
 
 > Progress: 3/36 overall | Scope: feature, Depth: Standard
 
-### Ideation Phase (stages 1.1-1.7)
+### Ideation Phase (stages 1.1-1.7 for this feature-scope run)
 
 **Stage 1.1 — Intent Capture** (aidlc-product-agent)
 

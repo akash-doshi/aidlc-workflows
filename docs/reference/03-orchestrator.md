@@ -242,7 +242,7 @@ When a state file is detected, the orchestrator presents four options:
 | Phase / Stage Type | Context Loaded |
 |---|---|
 | INITIALIZATION (0.1-0.3) | Guardrails only (workspace not yet detected) |
-| IDEATION (1.1-1.7) | `<record>/ideation/` artifacts completed so far + guardrails |
+| IDEATION (1.1-1.11) | `<record>/ideation/` artifacts completed so far + guardrails; for a discovery run (1.8-1.11) the decision pack and evidence record reload first |
 | INCEPTION -- RE stages | `<record>/inception/reverse-engineering/` + ideation artifacts |
 | INCEPTION -- Requirements stages | RE artifacts (if performed) + requirements artifacts |
 | INCEPTION -- Design stages | Requirements + user stories + application design artifacts |

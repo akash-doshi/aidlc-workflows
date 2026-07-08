@@ -122,7 +122,7 @@ as seed context so the stage does not re-ask "what do you want to build?"
 
 | File                          | Contents                                                      |
 |-------------------------------|---------------------------------------------------------------|
-| `intent-statement.md`         | Problem Statement, Target Customer, Success Metrics, Initiative Trigger, Project Type, Initial Scope Signal; plus Where This Came From, Already Decided, and Decide-By Date when the run supplied them |
+| `intent-statement.md`         | Problem Statement, Target Customer, Success Metrics, Initiative Trigger, Project Type, Initial Scope Signal; plus Where This Came From, Already Decided, and Decide-By Date when the run supplied them. On a discovery commit, stage 1.11 adds a What Discovery Validated section (the one cross-stage write in the phase) |
 | `stakeholder-map.md`          | Key stakeholders and interests, decision-makers vs. influencers, communication requirements |
 | `intent-capture-questions.md` | Clarifying questions with `[Answer]:` tags (input artifact) |
 | `source-inventory.md`         | One row per supplied material and what it likely answers; suggested-but-not-supplied; gaps |
@@ -493,7 +493,10 @@ team). Discovery itself runs no delivery-path stages.
 
 ### Outputs
 
-`decision-pack.md`.
+`decision-pack.md` (on a commit, with the appended handoff contract). A
+commit also writes the What Discovery Validated section into stage 1.1's
+`intent-statement.md` — the one cross-stage write in the phase, so the
+intent delivery reads reflects the validated framing.
 
 ---
 

@@ -47,14 +47,23 @@
 
 import { afterAll, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import {
   cleanupTestProject,
   createTestProject,
+  DEFAULT_RECORD_DIR,
+  DEFAULT_SPACE,
   FIXTURES_DIR,
   resetAidlcEnv,
   seededAuditDir,
+  seededRecordDir,
   seededStateFile,
   seedStateFile,
 } from "../harness/fixtures.ts";
@@ -265,4 +274,89 @@ describe("t214 discovery commit continuation (verb sequence, engine differential
     expect(readState(p)).toContain("- **Status**: Completed");
     expect(readState(p)).toContain("- **Scope**: discovery");
   });
+
+  // ============================================================
+  // The DELIVERY-WIRING differential — the decision pack's optional-consume
+  // contract. requirements-analysis declares `decision-pack` as `required:
+  // false` in its consumes frontmatter (core/aidlc-common/stages/inception/
+  // requirements-analysis.md), and the orchestrator threads only inputs that
+  // exist on disk (splitConsumesByPresence, aidlc-orchestrate.ts: an optional
+  // missing input "is not an input — it is dropped from the directive
+  // entirely, never flagged as a gap"; consumes_absent is added only when a
+  // REQUIRED input is missing). So the SAME verb route must emit a
+  // requirements-analysis directive WITH the pack's path when the pack file
+  // exists and with NO TRACE of it when it does not. Both directions below
+  // transcribe a hand-run against this fixture (2026-07-08, tools at
+  // dist/claude/.claude/tools) — observed output, not the prose's promises.
+  //
+  // Route to the directive (the cheapest honest one, reusing the pinned
+  // no-guard contract above): scope-change --scope feature re-plans the grid
+  // so requirements-analysis is EXECUTE, set-status --stage
+  // requirements-analysis re-opens the Completed workflow AT that stage, and
+  // next re-emits the Running current stage as a run-stage directive (the
+  // Step E behaviour) — deterministic, no model in the loop.
+  // ============================================================
+
+  // The workspace-relative pack path the directive carries (forward slashes —
+  // the orchestrator's canonical resolved-path form), rooted at the seeded
+  // default record: <record>/ideation/discovery-decision/decision-pack.md.
+  // discovery-decision is the pack's PRODUCER in the compiled graph, so the
+  // consume resolves under ITS stage dir, not the consuming stage's.
+  const PACK_REL = `aidlc/spaces/${DEFAULT_SPACE}/intents/${DEFAULT_RECORD_DIR}/ideation/discovery-decision/decision-pack.md`;
+
+  /** scope-change → set-status --stage requirements-analysis → next; returns
+   *  the run-stage directive plus the raw stdout JSON (for whole-payload
+   *  assertions). Asserts the route's own exit codes so a failure points at
+   *  the failing verb, not a JSON parse error. */
+  // biome-ignore lint/suspicious/noExplicitAny: directives are a typed union; the test reads scalar fields
+  function requirementsAnalysisDirective(p: string): { dir: any; raw: string } {
+    expect(scopeChange(p).status).toBe(0);
+    const c = run(UTILITY, ["set-status", "--stage", "requirements-analysis"], p);
+    expect(c.status).toBe(0);
+    const n = run(ORCHESTRATE, ["next"], p);
+    expect(n.status).toBe(0);
+    const dir = directive(n);
+    expect(dir.kind).toBe("run-stage");
+    expect(dir.stage).toBe("requirements-analysis");
+    expect(dir.phase).toBe("inception");
+    return { dir, raw: n.stdout };
+  }
+
+  test("delivery wiring, pack PRESENT: the requirements-analysis directive's consumes carries the decision pack's path", () => {
+    const p = completedDiscoveryProj();
+    // The discovery run left its decision pack in the record, exactly where
+    // the graph resolves the producer's artifact.
+    const packDir = join(seededRecordDir(p), "ideation", "discovery-decision");
+    mkdirSync(packDir, { recursive: true });
+    writeFileSync(join(packDir, "decision-pack.md"), "# Decision Pack\n\nProceed.\n");
+
+    const { dir } = requirementsAnalysisDirective(p);
+    // The pack is threaded into consumes — AND it is the ONLY entry: every
+    // other declared consume of requirements-analysis is optional and absent
+    // in this fixture (the brownfield conditionals are dropped for the
+    // Greenfield project type; the absent optionals are dropped by the
+    // presence split). Observed verbatim in the hand-run. This exact-list pin
+    // is the mechanism itself: present-on-disk optional IN, everything else
+    // silently OUT.
+    expect(dir.consumes).toEqual([PACK_REL]);
+    // No required input is missing, so the consumes_absent field is not
+    // emitted at all (it appears only for REQUIRED absences).
+    expect(dir.consumes_absent).toBeUndefined();
+  }, 30000);
+
+  test("delivery wiring, pack ABSENT: the requirements-analysis directive carries no trace of the decision pack", () => {
+    const p = completedDiscoveryProj();
+    // Same route, NO pack file on disk.
+    const { dir, raw } = requirementsAnalysisDirective(p);
+    // Every declared consume is optional and absent: the list is EMPTY, and
+    // consumes_absent does not exist (absent OPTIONAL inputs are silently
+    // dropped, never listed — the run-stage contract in the harness
+    // SKILL.md). Observed: {"consumes":[]} with no consumes_absent key.
+    expect(dir.consumes).toEqual([]);
+    expect(dir.consumes_absent).toBeUndefined();
+    // The strongest form of "no trace": the raw directive JSON never mentions
+    // the artifact at all — not in consumes, not in consumes_absent, not in
+    // any other field.
+    expect(raw).not.toContain("decision-pack");
+  }, 30000);
 });

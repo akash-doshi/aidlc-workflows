@@ -586,7 +586,7 @@ existence, then offers to resume from the last incomplete stage.
 | Phase/Stage Group | Context to Load |
 |-------------------|----------------|
 | **Initialization (0.1-0.3)** | Workspace filesystem; `aidlc-state.md` |
-| **Ideation (1.1-1.7)** | `<record>/ideation/` artifacts; guardrails |
+| **Ideation (1.1-1.11)** | `<record>/ideation/` artifacts; guardrails; discovery runs reload the decision pack and evidence record first |
 | **Inception -- RE** | RE artifacts; ideation scope/feasibility |
 | **Inception -- Requirements** | RE artifacts (if performed); requirements-analysis docs |
 | **Inception -- Design** | Requirements; user stories; application-design docs |
