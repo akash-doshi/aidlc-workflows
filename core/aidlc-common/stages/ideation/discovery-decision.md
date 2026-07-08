@@ -105,9 +105,22 @@ what happens to their work before they choose:
 - **Park** means: we stop here without deciding. The record is kept whole, and this decision can be reopened any time.
 
 Write the answer, who gave it, and when into the pack's **Decision** section.
-Then relay the outcome through the engine's own verbs:
+Then relay the outcome through the engine's own verbs. (The verb relays in
+this stage — jump, park, scope-change, set-status, state skip — are the
+documented exception to the orchestrator skill's never-call-the-state-tools
+rule: that rule guards the report-owned stage transitions, while these are
+audited workflow-level commands this stage file instructs by name.)
 
-- **Commit** — append the handoff contract as a machine-readable section of the decision pack: every answered question with status, confidence, and source; every supported assumption as a requirement with its evidence attached; every refuted assumption as a recorded exclusion with the evidence as the reason; every still-unknown verdict exported as a low-confidence assumption to re-raise; every test artifact marked promote registered as a starting point. Then ask one follow-up structured question (same §3 machinery): **where does the build happen?**
+- **Commit** — two record moves before the follow-up question:
+  1. Append the **handoff contract** to the decision pack. This is the section delivery consumes, so it instructs rather than documents: it opens with one consumption note — *settled entries are pre-answers for the consuming stage to confirm with the person, never to re-elicit; open items are questions to raise; every gate stays* — and then carries four parts, every entry in the same shape (value, status, confidence, which gate confirmed it, source):
+     - **Settled** — every answered question, and every supported assumption expressed as a requirement, each with its evidence attached.
+     - **Exclusions** — every refuted assumption and recorded no-go, with the evidence as the reason. These are boundaries for delivery, not suggestions.
+     - **Open items** — every still-unknown verdict, exported as a low-confidence assumption to re-raise, carrying discovery's recommendation where the record supports one and *ask the person* where it does not.
+     - **Starting points** — every test artifact marked promote, registered with its path.
+     Close the contract with a short map from what delivery asks first to where this record answers it: functional requirements in Settled, personas and stakeholders in the stakeholder map, scope boundaries in Exclusions and the intent statement, quality expectations in the evidence record. Point at the record — never duplicate it.
+  2. Refresh the **intent statement**: fold the chosen framing and the recorded exclusions into `<record>/ideation/intent-capture/intent-statement.md` as a new `## What Discovery Validated` heading (add it, or update it on a re-entry; every other section stays untouched). The section carries its provenance inline, one source per line, naming the record files the way the rest of the record does: the framing from `future-state.md`, the exclusions from `assumptions-record.md` and `evidence-record.md`, the confirmed answers from `open-questions-record.md`, and it closes by pointing at `decision-pack.md` as the full record behind this update to the intent-statement. (Those file references are not decoration: this stage's upstream-coverage sensor fires on any record write while the stage is active and greps the written file for this stage's consumed artifacts, so a provenance-labeled section passes it by construction, while an unlabeled one logs advisory noise.) The intent statement is the artifact delivery's entry stage reads first, so after a commit it must say what was validated — not what was guessed on day one.
+
+  Then ask one follow-up structured question (same §3 machinery): **where does the build happen?**
   - **Continue here** — the build happens in this workspace. The same workflow and the same record continue into delivery: proceed to Step 6 and the exit gate, then follow Step 8.
   - **Hand off** — the build happens somewhere else (another repository, another team, a workspace that holds the code). Proceed to Step 6 and the exit gate; approval completes this workflow, and the decision pack's handoff contract is what the receiving team's workflow consumes.
 - **Pivot** — everything learned is kept, and the initiative returns to the framing. Do NOT proceed to the exit gate and never mark this stage completed: after the §13 learnings ritual, relay the engine's backward jump — `bun {{HARNESS_DIR}}/tools/aidlc-jump.ts execute --target discovery-future-state --direction backward`. The jump re-opens discovery-future-state and the stages after it so their artifacts can be revised; nothing is deleted, and the evidence record is append-only — it is never rewound.
@@ -151,9 +164,12 @@ already exists — this stage adds no machinery):
    "covered by the discovery run: see the decision pack and handoff
    contract"` for each pending ideation stage.
 4. Hand control back to the forwarding loop (`next`). Delivery begins at the
-   stage the engine named, with the intent statement, stakeholder map, and
-   the whole discovery record already in place — the delivery path's entry
-   stages consume the intent statement this workflow produced at 1.1.
+   stage the engine named, and the vision arrives through two wired paths,
+   not through goodwill: the intent statement its entry stage reads was
+   refreshed at commit with the validated framing and exclusions, and the
+   decision pack is a declared optional input of `requirements-analysis`
+   and `user-stories` — the run-stage directive hands them its path, and
+   the upstream-coverage sensor verifies their output referenced it.
 
 Two display notes for the conductor, so the sequence's output is not
 misread: the audit shard will show `WORKFLOW_COMPLETED` (from the gate)

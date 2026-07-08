@@ -296,7 +296,7 @@ export function memoryTemplatesDir(projectDir: string, space?: string): string {
  *  it is harness-correct and space-INDEPENDENT (a framework default is the same
  *  for every space — it's the baseline a team optionally overrides per-space via
  *  `memoryTemplatesDir`). The framework ships nine default files (the discovery
- *  artifacts, as of 2.2.7); for any other artifact the sensor's middle branch
+ *  artifacts); for any other artifact the sensor's middle branch
  *  misses and falls through to the floor. AIDLC_FRAMEWORK_TEMPLATES_DIR is a
  *  test/relocation seam mirroring AIDLC_TEMPLATES_DIR. */
 export function frameworkTemplatesDir(): string {

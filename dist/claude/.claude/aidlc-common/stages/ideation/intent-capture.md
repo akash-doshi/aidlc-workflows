@@ -74,7 +74,8 @@ Follow the unified question flow from stage-protocol.md section 3. Gather the
 selected items through follow-up questions written into the same questions
 file, each with a blank [Answer]: tag, before ending any turn that waits on
 the person. Record declines as declines; never nag. When E is the answer,
-skip ahead — the questionnaire path is unchanged.
+skip ahead after recording the empty inventory in Step 4 — the questionnaire
+path is unchanged.
 
 When the person brings asks or materials: before drafting anything, add one
 follow-up question asking for their own reading — what they believe the asks
@@ -147,11 +148,17 @@ When the person brought asks, add:
   Step 3, verbatim. Several asks can feed one initiative; an ask that turns
   out to contain two problems is split into two rows and noted.
 
-When either exists, add:
+When a mandate or a decide-by date exists, add:
 - **Already Decided** — any mandate: what is already decided, by whom, and
   where that was recorded, so later choices present as genuinely open or
   pre-closed, never staged.
 - **Decide-By Date** — the date and what it is anchored to. Absent is fine.
+
+One section of this artifact is written later, by another stage: on a
+discovery run that commits, the decision stage adds a **What Discovery
+Validated** section (the chosen framing, the recorded exclusions, a pointer
+to the decision pack) so the statement delivery reads reflects what was
+validated, not the day-one guess. This stage never writes that section.
 
 Create `<record>/ideation/intent-capture/stakeholder-map.md` containing:
 - Key stakeholders and their interests

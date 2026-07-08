@@ -752,7 +752,7 @@ Before creating any artifact file, validate:
 ### Template overrides
 Before writing artifact `X` (keyed by the output filename stem — artifact `X` writes to `X.md`), resolve its template in this order, override-before-default, first hit wins:
 1. **team template** — `aidlc/spaces/<space>/memory/templates/X.md` (the active space's hand-authored override);
-2. **framework default** — the engine-shipped default `X.md` *if one ships* (nine ship as of 2.2.7, for the discovery artifacts; other artifacts miss here);
+2. **framework default** — the engine-shipped default `X.md` *if one ships* (the framework ships nine defaults, one per discovery artifact; other artifacts miss here);
 3. **else** — no template: follow the stage's existing prose.
 
 If a template resolves (tier 1 or 2), follow its structure: use its `##` headings as the skeleton to fill. A resolved template is used whole-doc (verbatim structure, no section merge). The `required-sections` sensor verifies the output against the SAME resolution order and the SAME file, so the produced shape and the checked shape cannot drift.

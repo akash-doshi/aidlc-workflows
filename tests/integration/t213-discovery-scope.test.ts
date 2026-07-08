@@ -1,6 +1,6 @@
 // covers: scope:discovery, stage:ideation/intent-capture, stage:ideation/discovery-current-state, stage:ideation/discovery-future-state, stage:ideation/discovery-experimentation, stage:ideation/discovery-decision
 //
-// t203 — discovery scope: compiled-artifact contract. Deterministic
+// t213 — discovery scope: compiled-artifact contract. Deterministic
 // integration twin of tests/e2e/t138-scope-exclusion-counts.test.ts's
 // data-driven style: every expectation below is DERIVED from (or checked
 // against) the shipped compiled artifacts — scope-grid.json, stage-graph.json,
@@ -121,7 +121,7 @@ const TEMPLATES = [
 // must never appear.
 const FORBIDDEN_TEMPLATES = ["intent-statement.md", "discovery-brief.md"] as const;
 
-describe("t203 discovery scope — compiled EXECUTE plan (scope-grid.json + stage-graph.json)", () => {
+describe("t213 discovery scope — compiled EXECUTE plan (scope-grid.json + stage-graph.json)", () => {
   test("discovery resolves exactly 8 EXECUTE stages in numeric order (0.1-0.3, 1.1, 1.8-1.11)", () => {
     const grid = readGrid();
     const graph = readGraph();
@@ -188,18 +188,21 @@ describe("t203 discovery scope — compiled EXECUTE plan (scope-grid.json + stag
     // still run it, discovery is the ONLY addition, and no stock scope lost
     // or gained the stage.
     expect(node?.scopes).toEqual(["enterprise", "feature", "mvp", "poc", "discovery"]);
-    // The two produces the extension added — every scope that runs the stage
-    // gets them; downstream discovery stages consume them by these names.
-    expect(node?.produces).toContain("source-inventory");
-    expect(node?.produces).toContain("open-questions-record");
-    // The pre-existing produces survive (append-only extension).
-    expect(node?.produces).toContain("intent-statement");
-    expect(node?.produces).toContain("stakeholder-map");
-    expect(node?.produces).toContain("intent-capture-questions");
+    // The exact ordered produces pin — the authored frontmatter order in
+    // core/aidlc-common/stages/ideation/intent-capture.md. This guards the
+    // append-only contract fully: a sixth produce (or a dropped or reordered
+    // one) cannot pass silently.
+    expect(node?.produces).toEqual([
+      "intent-statement",
+      "stakeholder-map",
+      "intent-capture-questions",
+      "source-inventory",
+      "open-questions-record",
+    ]);
   });
 });
 
-describe("t203 discovery scope — keyword routing can never resolve it", () => {
+describe("t213 discovery scope — keyword routing can never resolve it", () => {
   test("mapping.discovery.keywords is empty ([] — the composed-scope convention)", () => {
     const mapping = loadScopeMapping();
     expect(mapping.discovery).toBeDefined();
@@ -220,7 +223,7 @@ describe("t203 discovery scope — keyword routing can never resolve it", () => 
   });
 });
 
-describe("t203 discovery scope — framework-default templates ship with sensor-checkable shape", () => {
+describe("t213 discovery scope — framework-default templates ship with sensor-checkable shape", () => {
   for (const t of TEMPLATES) {
     test(`templates/${t} exists with at least 2 H2 headings`, () => {
       const p = join(TEMPLATES_DIR, t);
@@ -242,7 +245,7 @@ describe("t203 discovery scope — framework-default templates ship with sensor-
   });
 });
 
-describe("t203 discovery scope — the extended intent-capture and the commit continuation keep their contracts (stage prose pins)", () => {
+describe("t213 discovery scope — the extended intent-capture and the commit continuation keep their contracts (stage prose pins)", () => {
   const STAGES_DIR = join(AIDLC_SRC, "aidlc-common", "stages", "ideation");
 
   test("intent-capture's intake ask flows through the questions file (Stop-hook contract)", () => {

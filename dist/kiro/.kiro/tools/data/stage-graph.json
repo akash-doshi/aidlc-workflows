@@ -1188,6 +1188,10 @@
         "required": false
       },
       {
+        "artifact": "decision-pack",
+        "required": false
+      },
+      {
         "artifact": "business-overview",
         "required": false,
         "conditional_on": "brownfield"
@@ -1282,6 +1286,10 @@
       {
         "artifact": "requirements",
         "required": true
+      },
+      {
+        "artifact": "decision-pack",
+        "required": false
       },
       {
         "artifact": "business-overview",

@@ -2,7 +2,12 @@
 
 <!-- Framework default template. The ## headings below are the required
      sections the required-sections sensor checks. A team override at
-     aidlc/spaces/<space>/memory/templates/decision-pack.md wins. -->
+     aidlc/spaces/<space>/memory/templates/decision-pack.md wins.
+     On a commit the stage appends a Handoff Contract section (settled
+     entries, exclusions, open items, starting points, and the map to
+     where the record answers delivery's questions). It is deliberately
+     not a heading here: pivot and park never write it, and a required
+     heading would make those honest paths fail the sensor. -->
 
 ## Where this came from
 

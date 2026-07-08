@@ -62,9 +62,10 @@ The loop is a bounded prose loop whose state lives in the artifacts on disk.
 On re-entry (a new session, a resumed workflow), this stage re-runs from its
 top per the standard stage ritual — but substep 1 reads what earlier cycles
 already recorded, so work continues from the record rather than starting over.
-At the artifact re-use question, the answer for `test-plans.md` and
-`evidence-record.md` is always Modify (continue the records) — never Redo,
-because the evidence record is append-only:
+At the artifact re-use question, for `test-plans.md` and `evidence-record.md`
+recommend Modify (continue the records) and warn that Redo would rewind the
+append-only evidence record — a person who insists on Redo is choosing to
+discard recorded evidence:
 
 1. Read `<record>/ideation/discovery-experimentation/test-plans.md` and `<record>/ideation/discovery-experimentation/evidence-record.md` (create either, empty, on first entry).
 2. Determine the highest-risk open assumption from the assumptions record — importance times evidence weakness, re-ranked as evidence lands.

@@ -32,7 +32,7 @@
     },
     "coveredByClass": {
       "function": 95,
-      "audit": 31,
+      "audit": 33,
       "scope": 10,
       "stage": 12,
       "hook": 11,
@@ -358,8 +358,13 @@
       "unitClass": "audit",
       "unitId": "SCOPE_CHANGED",
       "minMechanism": "none",
-      "coveredBy": [],
-      "status": "UNCOVERED"
+      "coveredBy": [
+        {
+          "file": "tests/integration/t214-discovery-continuation.test.ts",
+          "mechanism": "cli"
+        }
+      ],
+      "status": "covered"
     },
     {
       "unitClass": "audit",
@@ -496,8 +501,13 @@
       "unitClass": "audit",
       "unitId": "STAGE_SKIPPED",
       "minMechanism": "none",
-      "coveredBy": [],
-      "status": "UNCOVERED"
+      "coveredBy": [
+        {
+          "file": "tests/integration/t214-discovery-continuation.test.ts",
+          "mechanism": "cli"
+        }
+      ],
+      "status": "covered"
     },
     {
       "unitClass": "audit",
@@ -3449,7 +3459,7 @@
       "minMechanism": "none",
       "coveredBy": [
         {
-          "file": "tests/integration/t203-discovery-scope.test.ts",
+          "file": "tests/integration/t213-discovery-scope.test.ts",
           "mechanism": "none"
         }
       ],
@@ -3651,7 +3661,7 @@
       "minMechanism": "none",
       "coveredBy": [
         {
-          "file": "tests/integration/t203-discovery-scope.test.ts",
+          "file": "tests/integration/t213-discovery-scope.test.ts",
           "mechanism": "none"
         }
       ],
@@ -3663,7 +3673,7 @@
       "minMechanism": "none",
       "coveredBy": [
         {
-          "file": "tests/integration/t203-discovery-scope.test.ts",
+          "file": "tests/integration/t213-discovery-scope.test.ts",
           "mechanism": "none"
         }
       ],
@@ -3675,7 +3685,7 @@
       "minMechanism": "none",
       "coveredBy": [
         {
-          "file": "tests/integration/t203-discovery-scope.test.ts",
+          "file": "tests/integration/t213-discovery-scope.test.ts",
           "mechanism": "none"
         }
       ],
@@ -3687,7 +3697,7 @@
       "minMechanism": "none",
       "coveredBy": [
         {
-          "file": "tests/integration/t203-discovery-scope.test.ts",
+          "file": "tests/integration/t213-discovery-scope.test.ts",
           "mechanism": "none"
         }
       ],
@@ -3719,7 +3729,7 @@
           "mechanism": "tui"
         },
         {
-          "file": "tests/integration/t203-discovery-scope.test.ts",
+          "file": "tests/integration/t213-discovery-scope.test.ts",
           "mechanism": "none"
         }
       ],
@@ -4822,6 +4832,10 @@
           "mechanism": "cli"
         },
         {
+          "file": "tests/integration/t214-discovery-continuation.test.ts",
+          "mechanism": "cli"
+        },
+        {
           "file": "tests/unit/t17.test.ts",
           "mechanism": "cli"
         }
@@ -5150,6 +5164,10 @@
       "minMechanism": "cli",
       "coveredBy": [
         {
+          "file": "tests/integration/t214-discovery-continuation.test.ts",
+          "mechanism": "cli"
+        },
+        {
           "file": "tests/unit/t214-routing-cost-strings.test.ts",
           "mechanism": "cli"
         },
@@ -5205,6 +5223,10 @@
       "unitId": "aidlc-utility set-status",
       "minMechanism": "cli",
       "coveredBy": [
+        {
+          "file": "tests/integration/t214-discovery-continuation.test.ts",
+          "mechanism": "cli"
+        },
         {
           "file": "tests/unit/t27.test.ts",
           "mechanism": "cli"

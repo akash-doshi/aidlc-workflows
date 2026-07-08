@@ -224,6 +224,15 @@ beforeAll(() => {
     );
     for (const c of p.obj.consumes as Array<Record<string, unknown>>) {
       if (!c || typeof c.artifact !== "string") continue;
+      // OPTIONAL consumes (required: false) are exempt: the engine drops an
+      // absent optional input silently (aidlc-orchestrate.ts resolveConsumes —
+      // "optional + missing → not an input, not a gap"), so a producer outside
+      // the requires_stage chain is legal for them by the engine's own
+      // semantics. The chain-reachability invariant below pins REQUIRED
+      // cross-phase inputs only (e.g. requirements-analysis consuming
+      // decision-pack, produced only under the discovery scope, must not
+      // force discovery stages into every scope's chain).
+      if (c.required === false) continue;
       const prod = artifactToProducer.get(c.artifact);
       if (!prod) continue;
       if (prod.phase !== p.phase && !rs.has(prod.slug)) {
