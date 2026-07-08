@@ -77,6 +77,12 @@ Three adopted sections:
 - **Appetite** — how much the organization is willing to invest in this direction: a boundary, not an estimate.
 - **No-gos** — what the initiative will not do.
 
+Appetite and no-gos are the person's to state, never invented: when the pack
+is first drafted, ask for both in the same structured exchange as the
+proposal-format question (any mandate recorded at intent seeds the no-gos).
+If the person has no answer yet, record "not yet stated" — an honest blank
+outranks a guessed boundary.
+
 ### Step 4: Issue the Pack Before the Gate
 
 When the remaining open assumptions can no longer change the verdict, the pack
@@ -155,9 +161,14 @@ the ideation questionnaire. Relay this sequence of engine verbs, in order
 no machinery; scope-change and skip each emit their own audit event, and
 set-status is a plain state-field write):
 
-1. Ask which delivery scope fits the committed build (a structured question:
-   `feature` is the default, `mvp` and `enterprise` are the usual
-   alternatives, or a composed scope via `/aidlc compose`), then relay
+1. Ask which delivery scope fits the committed build, with each option
+   carrying its plain meaning (a structured question): `feature` — the
+   default, a standard delivery pass through design, build, and operation;
+   `mvp` — a leaner pass that trades ceremony for speed, for a first
+   version; `enterprise` — the fullest pass, for work that needs every
+   design and review stage; or a composed scope via `/aidlc compose` when
+   none of those fit. The choice sets how much process the build gets, and
+   it can be reshaped later mid-workflow. Then relay
    `bun .claude/tools/aidlc-utility.ts scope-change --scope <chosen>`.
 2. Run `bun .claude/tools/aidlc-orchestrate.ts next` once: the engine
    names the first delivery stage under the new scope (it applies the

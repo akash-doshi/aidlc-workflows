@@ -89,7 +89,7 @@ See [Workshop Mode](workshop-mode.md) for the multi-developer manual recipe and 
 
 - **Stages:** 8 of 36
 - **Default depth:** Standard
-- **Skips:** Every delivery-path stage — a commit decision hands off to a delivery scope
+- **Skips:** The six questionnaire ideation stages (1.2-1.7) and all of Inception, Construction, and Operation — a commit decision continues into (or hands off to) a delivery scope
 
 ---
 

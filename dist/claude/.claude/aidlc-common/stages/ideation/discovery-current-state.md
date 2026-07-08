@@ -76,7 +76,8 @@ Create or extend `<record>/ideation/discovery-current-state/design-language-reco
 - **Component inventory** — every recurring interface component as the product names it, with variants, states, and source references
 - **Design tokens** — the typed visual values named by role, kept machine-readable so a generated mock-up can be checked against them deterministically
 - **UX patterns and principles** — navigation model, layout, feedback, error handling, voice — each stated only when observed on more than one screen or attested in a guideline
-- **Source registry** — every source consulted, what it yielded, conflicts and how each was resolved, and the gaps that remain
+- **Source registry** — every source consulted, what it yielded, and conflicts with how each was resolved
+- **Gaps** — what remains unknown or unconfirmed, kept as its own section so a reader sees the record's edges at a glance
 
 Sourcing follows a fixed order: ask the team what exists and pull everything
 provided, mine the application and the codebase for the rest (real values from

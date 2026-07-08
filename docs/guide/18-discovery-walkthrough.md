@@ -11,6 +11,12 @@ discovery — start a normal workflow (see [Your First
 Workflow](02-your-first-workflow.md)) and the framework will pick a delivery
 scope for you.
 
+One practical choice before you start: run discovery in the workspace where
+the build would happen if you decide to build. The final stage offers to
+continue straight into delivery in the same workspace — starting in a
+scratch folder or a notes repository forfeits that option and leaves you
+with the hand-off path only.
+
 ## When to reach for discovery
 
 Use it when any of these sound familiar:
@@ -34,6 +40,8 @@ explicitly:
 
 A discovery run is 8 stages: the 3 initialization stages every workflow runs,
 the standard Intent Capture stage (1.1), and four discovery stages (1.8–1.11).
+(The jump from 1.1 to 1.8 is not an error: 1.2–1.7 are the questionnaire
+ideation stages the delivery scopes run, and discovery leaves them untouched.)
 
 ```
  0.1–0.3  initialization        (automatic)
@@ -119,6 +127,14 @@ four-person hallway test, and team opinion about what users want caps at
 "inconclusive". Results land in an append-only **evidence record**: later
 entries supersede earlier ones, nothing is ever rewritten.
 
+Be clear about who does what here: the agent designs the tests, drafts the
+materials, and keeps the records, but your team is the test apparatus for
+anything involving people — you run the hallway test, you sit with the users
+walking a journey, you show the mock. Expect this stage to cost real
+calendar time from a person, not just agent turns. What you observed goes
+back to the agent in plain words, and it lands in the evidence record with
+its source and its limits attached.
+
 An assumption that fails here is the process working. It just saved you the
 build.
 
@@ -127,9 +143,11 @@ build.
 The run compiles a **decision pack**: where this came from, what was tested
 and what the evidence showed, a working artifact (a mock, a readout, a slice),
 the narrative in your organization's own proposal format, the appetite (how
-much this direction is worth investing), and the no-gos (what this will not
-do). The pack goes out to the people who will carry the decision *before* any
-meeting.
+much this direction is worth investing — you are asked for it when the pack
+is first drafted, and "not yet stated" is an acceptable answer), and the
+no-gos (what this will not do). You send the pack to the people who will
+carry the decision *before* any meeting, through whatever channel your team
+already uses.
 
 Then you decide, and each choice is exactly what it sounds like:
 
@@ -152,11 +170,24 @@ at the decision pack. Before the switch, the stage folds what was validated
 back into the intent statement (a What Discovery Validated section) and
 appends the handoff contract to the pack, and the first delivery stages that
 need them — requirements analysis and user stories — list the pack among
-their declared inputs, so the vision arrives wired, not hoped for. If the build belongs to another team or repository,
+their declared inputs. Two honest caveats about that wiring: the input is
+optional (a delivery run without a pack proceeds normally), and the check
+that delivery actually referenced it is an advisory sensor — it records a
+miss in the audit trail rather than stopping anything. You can also verify
+it yourself in two minutes: open `intent-statement.md` and look for the
+"What Discovery Validated" section, then open the requirements document and
+look for `decision-pack.md` cited as a source. If the build belongs to another team or repository,
 choose **hand off**: this workflow completes, and the decision pack — which
 carries a structured summary of everything answered, supported, refuted, and
 still open, each entry with its status, confidence, and source — is what the
-receiving team's workflow starts from.
+receiving team starts from. The pack is a document
+(`ideation/discovery-decision/decision-pack.md` in your record), and moving
+it is up to you: share it the way your organization shares documents. If the
+receiving team also runs this framework, they supply it as material at their
+own intent-capture stage and it pre-answers their questions from the start.
+There is no automatic transport and no delivery receipt — if you need to
+know it arrived, ask the receiving team to confirm the exclusions and open
+items, which is a conversation worth having anyway.
 
 ## What you end up with
 
